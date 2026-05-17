@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
+    function isValidId(id) { return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['userId', 'country', 'theme', 'createdAt'])
+        && data.userId is string && data.userId == request.auth.uid
+        && data.country is string && data.country.size() == 2
+        && data.theme is string && data.theme in ['dark', 'light']
+        && data.createdAt is timestamp;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && isValidId(userId)
+                    && isValidUser(incoming())
+                    && incoming().createdAt == request.time;
+      allow update: if isOwner(userId) && isValidUser(incoming())
+                    && incoming().userId == existing().userId
+                    && incoming().createdAt == existing().createdAt
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['country', 'theme', 'displayName', 'email']);
+      allow delete: if false;
+
+      match /follows/{followId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(followId)
+                      && incoming().keys().hasAll(['userId', 'entityId', 'entityType', 'entityName', 'createdAt'])
+                      && incoming().userId == userId
+                      && incoming().entityId is string && incoming().entityId.size() > 0 && incoming().entityId.size() <= 64
+                      && incoming().entityType in ['team', 'league']
+                      && incoming().entityName is string && incoming().entityName.size() > 0 && incoming().entityName.size() <= 100
+                      && incoming().createdAt == request.time;
+        allow delete: if isOwner(userId);
+        allow update: if false;
+      }
+    }
+  }
+}

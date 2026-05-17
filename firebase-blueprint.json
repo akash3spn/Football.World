@@ -1,0 +1,42 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and preferences.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "country": { "type": "string", "default": "BD" },
+        "theme": { "type": "string", "enum": ["dark", "light"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["userId", "country", "theme", "createdAt"]
+    },
+    "Follow": {
+      "title": "Follow",
+      "description": "Entities (Teams, Leagues) that a user follows.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "entityId": { "type": "string" },
+        "entityType": { "type": "string", "enum": ["team", "league"] },
+        "entityName": { "type": "string" },
+        "entityLogo": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["userId", "entityId", "entityType", "entityName", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profile documents"
+    },
+    "/users/{userId}/follows/{followId}": {
+      "schema": { "$ref": "#/entities/Follow" },
+      "description": "Subcollection for entities a user follows"
+    }
+  }
+}
