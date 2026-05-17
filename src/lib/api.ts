@@ -17,12 +17,62 @@ export const getLiveFixtures = async () => {
   return res.data;
 };
 
+export const getFixturesByDate = async (dateStr: string) => {
+  const res = await apiClient.get(`/fixtures?date=${dateStr}`);
+  return res.data;
+};
+
 export const getUpcomingFixtures = async () => {
   const res = await apiClient.get('/fixtures/upcoming');
   return res.data;
 };
 
+export const getMatch = async (id: string | number) => {
+  const res = await apiClient.get(`/fixtures/id?id=${id}`);
+  return res.data;
+};
+
 export const getNews = async () => {
   const res = await apiClient.get('/news');
+  return res.data;
+};
+
+export const searchEntities = async (query: string) => {
+  const res = await apiClient.get(`/search?q=${encodeURIComponent(query)}`);
+  return res.data;
+};
+
+export const getStandings = async (league: string | number, season: string | number) => {
+  const res = await apiClient.get(`/standings?league=${league}&season=${season}`);
+  return res.data;
+};
+
+export const getTeam = async (id: string | number) => {
+  const res = await apiClient.get(`/teams?id=${id}`);
+  return res.data;
+};
+
+export const getTeamFixtures = async (id: string | number) => {
+  const res = await apiClient.get(`/team/fixtures?id=${id}`);
+  return res.data;
+};
+
+export const getTeamSquad = async (id: string | number) => {
+  const res = await apiClient.get(`/team/squad?id=${id}`);
+  return res.data;
+};
+
+export const getTeamCoach = async (id: string | number) => {
+  const res = await apiClient.get(`/team/coach?id=${id}`);
+  return res.data;
+};
+
+export const getLeague = async (id: string | number) => {
+  const res = await apiClient.get(`/league?id=${id}`);
+  return res.data;
+};
+
+export const getLeagueFixtures = async (league: string | number, season: string | number) => {
+  const res = await apiClient.get(`/fixtures/league?league=${league}&season=${season}`);
   return res.data;
 };

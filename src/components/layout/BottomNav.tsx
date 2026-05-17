@@ -1,4 +1,4 @@
-import { Home, Radio, CalendarDays, Search, User } from 'lucide-react';
+import { Home, Radio, CalendarDays, Globe2, User } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 
@@ -10,7 +10,7 @@ export default function BottomNav() {
       <div className="flex justify-around items-center h-16">
         <NavButton to="/" icon={Home} label="Home" current={location.pathname} />
         <NavButton to="/live" icon={Radio} label="Live" current={location.pathname} />
-        <NavButton to="/search" icon={Search} label="Search" current={location.pathname} />
+        <NavButton to="/international" icon={Globe2} label="Global" current={location.pathname} />
         <NavButton to="/fixtures" icon={CalendarDays} label="Fixtures" current={location.pathname} />
         <NavButton to="/profile" icon={User} label="Profile" current={location.pathname} />
       </div>

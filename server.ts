@@ -28,7 +28,6 @@ const API_URL = `https://${API_HOST}`;
 const apiParams = {
   headers: {
     'x-apisports-key': API_KEY,
-    'x-rapidapi-host': API_HOST,
   },
 };
 
@@ -63,34 +62,139 @@ app.get('/api/fixtures/live', async (req, res) => {
   }
 });
 
+app.get('/api/fixtures', async (req, res) => {
+  if (!API_KEY) {
+    return res.json(getFallbackData('fixtures'));
+  }
+  try {
+    const { date } = req.query; // format YYYY-MM-DD
+    if (!date) {
+        return res.status(400).json({ error: 'Date parameter is required' });
+    }
+    const response = await axios.get(`${API_URL}/fixtures?date=${date}`, apiParams);
+    res.json(response.data);
+  } catch (error: any) {
+    console.error('API Error:', error?.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to fetch fixtures' });
+  }
+});
+
 app.get('/api/fixtures/upcoming', async (req, res) => {
   if (!API_KEY) {
     return res.json(getFallbackData('fixtures'));
   }
   try {
-    // Next 24 hours
     const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
     const dateStr = today.toISOString().split('T')[0];
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    // Fetch fixtures for the current date. Also we can specify status=NS to get upcoming ones
+    const response = await axios.get(`${API_URL}/fixtures?date=${dateStr}&status=NS`, apiParams);
+    
+    let upcoming = response.data.response || [];
+    
+    // If very few upcoming today, fetch tomorrow's
+    if (upcoming.length < 5) {
+       const tomorrow = new Date(today);
+       tomorrow.setDate(tomorrow.getDate() + 1);
+       const tmrwStr = tomorrow.toISOString().split('T')[0];
+       const tomorrowRes = await axios.get(`${API_URL}/fixtures?date=${tmrwStr}&status=NS`, apiParams);
+       upcoming = [...upcoming, ...(tomorrowRes.data.response || [])];
+    }
 
-    // Fetch fixtures for a few major leagues (e.g., PL: 39, La Liga: 140, CL: 2)
-    // To limit reqs, let's just fetch for date
-    const response = await axios.get(`${API_URL}/fixtures?date=${dateStr}`, apiParams);
-    res.json(response.data);
+    res.json({ ...response.data, response: upcoming });
   } catch (error: any) {
     console.error('API Error:', error?.response?.data || error.message);
     res.status(500).json({ error: 'Failed to fetch upcoming fixtures' });
   }
 });
 
+app.get('/api/fixtures/league', async (req, res) => {
+  try {
+    const { league, season } = req.query;
+    if (!league || !season) return res.status(400).json({ error: 'League and season required' });
+    const response = await axios.get(`${API_URL}/fixtures?league=${league}&season=${season}`, apiParams);
+    res.json(response.data);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch league fixtures' });
+  }
+});
+
+app.get('/api/teams', async (req, res) => {
+  try {
+    const q = req.query.id;
+    const response = await axios.get(`${API_URL}/teams?id=${q}`, apiParams);
+    res.json(response.data);
+  } catch (err: any) {
+    if (err.response) {
+      res.status(err.response.status).json(err.response.data);
+    } else {
+      res.status(500).json({ error: 'Failed to fetch team data' });
+    }
+  }
+});
+
+app.get('/api/fixtures/id', async (req, res) => {
+  try {
+    const { id } = req.query;
+    if (!id) return res.status(400).json({ error: 'Fixture id required' });
+    const response = await axios.get(`${API_URL}/fixtures?id=${id}`, apiParams);
+    res.json(response.data);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch fixture' });
+  }
+});
+
+app.get('/api/team/fixtures', async (req, res) => {
+  try {
+    const { id } = req.query;
+    if (!id) return res.status(400).json({ error: 'Team id required' });
+    const [lastRes, nextRes] = await Promise.all([
+      axios.get(`${API_URL}/fixtures?team=${id}&last=5`, apiParams),
+      axios.get(`${API_URL}/fixtures?team=${id}&next=5`, apiParams)
+    ]);
+    res.json({
+      last: lastRes.data.response || [],
+      next: nextRes.data.response || []
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to fetch team fixtures' });
+  }
+});
+
+app.get('/api/team/squad', async (req, res) => {
+  try {
+    const { id } = req.query;
+    if (!id) return res.status(400).json({ error: 'Team id required' });
+    const response = await axios.get(`${API_URL}/players/squads?team=${id}`, apiParams);
+    res.json(response.data);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to fetch team squad' });
+  }
+});
+
+app.get('/api/team/coach', async (req, res) => {
+  try {
+    const { id } = req.query;
+    if (!id) return res.status(400).json({ error: 'Team id required' });
+    const response = await axios.get(`${API_URL}/coachs?team=${id}`, apiParams);
+    res.json(response.data);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to fetch team coach' });
+  }
+});
+
+app.get('/api/league', async (req, res) => {
+  try {
+    const q = req.query.id;
+    const response = await axios.get(`${API_URL}/leagues?id=${q}`, apiParams);
+    res.json(response.data);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to fetch league data' });
+  }
+});
+
 app.get('/api/search', async (req, res) => {
   const { q } = req.query;
   if (!q) return res.json({ teams: [], leagues: [] });
-  // Currently, we mock search to ensure NO CRASH, but if API_KEY is present, we could search teams.
-  // api-football supports search via /teams?search=string
   if (!API_KEY) {
       return res.json({
         teams: [],
@@ -109,6 +213,18 @@ app.get('/api/search', async (req, res) => {
      res.status(500).json({ error: 'Search failed' });
   }
 });
+
+app.get('/api/standings', async (req, res) => {
+  try {
+    const { league, season } = req.query;
+    if (!league || !season) return res.status(400).json({ error: 'League and season required' });
+    const response = await axios.get(`${API_URL}/standings?league=${league}&season=${season}`, apiParams);
+    res.json(response.data);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch standings' });
+  }
+});
+
 app.get('/api/news', async (req, res) => {
    // A mock news endpoint for now since API-Football doesn't have a news endpoint.
    // We will return a few static recent news placeholders but we could scrape or use another Free API like NewsAPI.
@@ -132,6 +248,24 @@ app.get('/api/news', async (req, res) => {
         }
      ]
    });
+});
+
+app.get('/sitemap.xml', (req, res) => {
+  res.header('Content-Type', 'application/xml');
+  res.send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://football.world/</loc><changefreq>hourly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://football.world/live-football-score</loc><changefreq>always</changefreq><priority>0.9</priority></url>
+  <url><loc>https://football.world/today-football-match</loc><changefreq>hourly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://football.world/leagues</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+</urlset>`);
+});
+
+app.get('/robots.txt', (req, res) => {
+  res.header('Content-Type', 'text/plain');
+  res.send(`User-agent: *
+Allow: /
+Sitemap: https://football.world/sitemap.xml`);
 });
 
 
@@ -166,6 +300,29 @@ async function startServer() {
          console.error('Socket Live Poll Error');
        }
     }, 30000);
+
+    // Refresh fixtures every 3 minutes
+    setInterval(async () => {
+       try {
+         if (API_KEY) {
+           const today = new Date();
+           const dateStr = today.toISOString().split('T')[0];
+           const response = await axios.get(`${API_URL}/fixtures?date=${dateStr}&status=NS`, apiParams);
+           
+           let upcoming = response.data.response || [];
+           if (upcoming.length < 5) {
+              const tomorrow = new Date(today);
+              tomorrow.setDate(tomorrow.getDate() + 1);
+              const tmrwStr = tomorrow.toISOString().split('T')[0];
+              const tomorrowRes = await axios.get(`${API_URL}/fixtures?date=${tmrwStr}&status=NS`, apiParams);
+              upcoming = [...upcoming, ...(tomorrowRes.data.response || [])];
+           }
+           io.emit('upcoming_updates', { ...response.data, response: upcoming });
+         }
+       } catch (error) {
+         console.error('Socket upcoming update error');
+       }
+    }, 180000);
   });
 }
 

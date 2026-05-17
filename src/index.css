@@ -11,6 +11,12 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
 html.dark {
   color-scheme: dark;
 }

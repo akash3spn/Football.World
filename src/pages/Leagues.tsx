@@ -1,5 +1,7 @@
 import { Trophy } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // Hardcoded core leagues since API-Football /leagues takes specific queries
 const TOP_LEAGUES = [
@@ -14,6 +16,12 @@ const TOP_LEAGUES = [
 ];
 
 export default function Leagues() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = "Top Football Leagues & World Competitions | Football.World";
+  }, []);
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex items-center gap-4 mb-8">
@@ -25,6 +33,7 @@ export default function Leagues() {
          {TOP_LEAGUES.map((league, i) => (
              <motion.div 
                 key={league.id}
+                onClick={() => navigate(`/league/${league.id}`)}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}

@@ -1,17 +1,23 @@
 {
   "name": "Football.World",
   "short_name": "Football",
-  "description": "Premium real-time global football ecosystem",
+  "description": "Worldwide Football Platform with Live Scores and Realtime Match Updates",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#050505",
-  "theme_color": "#050505",
+  "theme_color": "#00D1FF",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDBFNUZGIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTAiLz48cGF0aCBkPSJNMTIgMmE5Ljk2IDkuOTYgMCAwIDEtMy44NyA2Ljc5TDUgMTBwYXRoPjwvc3ZnPg==",
+      "src": "/vite.svg",
       "sizes": "192x192",
       "type": "image/svg+xml"
+    },
+    {
+      "src": "/vite.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
     }
-  ]
+  ],
+  "categories": ["sports", "news", "entertainment"]
 }

@@ -1,68 +1,44 @@
 import { useEffect, useState } from "react";
-import { auth, loginWithGoogle, logout, getFollows, unfollowEntity } from "../lib/firebase";
-import { User as FirebaseUser } from "firebase/auth";
-import { LogOut, UserIcon, Bell } from "lucide-react";
+import { getFollows, unfollowEntity } from "../lib/firebase";
+import { Bell, Trophy } from "lucide-react";
 
 export default function Profile() {
-   const [user, setUser] = useState<FirebaseUser | null>(auth.currentUser);
    const [follows, setFollows] = useState<any[]>([]);
 
    useEffect(() => {
-      const unsub = auth.onAuthStateChanged(u => {
-          setUser(u);
-          if (u) {
-              getFollows(u.uid).then(setFollows);
-          } else {
-              setFollows([]);
-          }
-      });
-      return () => unsub();
+      document.title = "My Followed Teams | Football.World";
+      getFollows(null).then(setFollows);
    }, []);
 
-   const handleUnfollow = async (entityId: string, entityType: 'team' | 'league') => {
-       if (!user) return;
-       await unfollowEntity(user.uid, entityId, entityType);
-       setFollows(fs => fs.filter(f => f.entityId !== entityId));
-   }
+   const requestNotifications = async () => {
+      if (!('Notification' in window)) return;
+      await Notification.requestPermission();
+      alert('Notification permissions granted. You will receive updates for your followed teams.');
+   };
 
-   if (!user) {
-       return (
-           <div className="max-w-md mx-auto px-4 py-20 flex flex-col items-center justify-center text-center">
-              <div className="w-20 h-20 bg-accent-blue/10 flex items-center justify-center rounded-full mb-6">
-                 <UserIcon className="w-10 h-10 text-accent-blue" />
-              </div>
-              <h1 className="text-3xl font-bold font-sans tracking-tight mb-4">Join Football.World</h1>
-              <p className="text-zinc-500 mb-8">Follow your favorite teams, get real-time match notifications, and sync across your devices.</p>
-              <button 
-                 onClick={loginWithGoogle}
-                 className="w-full bg-accent-blue text-black font-bold py-4 rounded-full hover:shadow-[0_0_20px_rgba(0,229,255,0.4)] transition-all"
-              >
-                  Continue with Google
-              </button>
-           </div>
-       )
+   const handleUnfollow = async (entityId: string, entityType: 'team' | 'league') => {
+       await unfollowEntity(null, entityId, entityType);
+       setFollows(fs => fs.filter(f => f.entityId !== entityId));
    }
 
    return (
       <div className="max-w-4xl mx-auto px-4 py-8">
-         <div className="glass-panel p-6 flex items-center justify-between mb-8">
-            <div className="flex items-center gap-4">
-               <img src={user.photoURL || ''} alt="Avatar" className="w-16 h-16 rounded-full border-2 border-accent-blue" />
-               <div>
-                  <h2 className="text-xl font-bold">{user.displayName}</h2>
-                  <p className="text-xs text-zinc-500">{user.email}</p>
-               </div>
-            </div>
-            <button onClick={logout} className="p-3 bg-red-500/10 text-red-500 rounded-full hover:bg-red-500/20 transition-colors">
-               <LogOut className="w-5 h-5" />
-            </button>
+         <div className="glass-panel p-6 flex flex-col items-center justify-center text-center mb-8 bg-gradient-to-br from-white/5 to-transparent">
+            <Trophy className="w-12 h-12 text-accent-blue mb-4 drop-shadow-[0_0_15px_rgba(0,209,255,0.5)]" />
+            <h2 className="text-2xl font-bold font-sans tracking-tight">Your Followed Teams</h2>
+            <p className="text-zinc-400 text-sm mt-2 max-w-sm">
+               Matches for teams you follow will appear here. Turn on notifications to receive live match alerts without needing an account.
+            </p>
          </div>
 
          <div className="mb-4 flex items-center justify-between">
             <h3 className="text-lg font-bold">Following</h3>
-            <div className="flex items-center gap-2 text-xs text-zinc-500">
-               <Bell className="w-4 h-4" /> Notifications Active
-            </div>
+            <button 
+               onClick={requestNotifications}
+               className="flex items-center justify-center gap-2 px-3 py-1.5 bg-accent-blue/10 hover:bg-accent-blue/20 text-accent-blue rounded-full border border-accent-blue/50 text-xs font-bold transition-colors"
+            >
+               <Bell className="w-3 h-3" /> Enable Match Alerts
+            </button>
          </div>
 
          {follows.length === 0 ? (
@@ -74,7 +50,7 @@ export default function Profile() {
                {follows.map(f => (
                   <div key={f.entityId} className="glass-panel p-4 rounded-xl flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                         <img src={f.entityLogo} className="w-10 h-10 object-contain" />
+                         <img src={f.entityLogo} className="w-10 h-10 object-contain drop-shadow-md" />
                          <div>
                             <h4 className="font-semibold text-sm truncate max-w-[120px]">{f.entityName}</h4>
                             <p className="text-[10px] uppercase text-zinc-500 tracking-wider">{f.entityType}</p>
@@ -82,7 +58,7 @@ export default function Profile() {
                       </div>
                       <button 
                          onClick={() => handleUnfollow(f.entityId, f.entityType)}
-                         className="text-[10px] text-zinc-500 hover:text-red-500 uppercase font-bold tracking-widest px-2 py-1 rounded bg-black/20"
+                         className="text-[10px] text-zinc-500 hover:text-red-500 uppercase font-bold tracking-widest px-2 py-1 rounded bg-black/20 transition-colors"
                       >
                          Unfollow
                       </button>

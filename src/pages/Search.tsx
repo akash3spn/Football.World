@@ -1,11 +1,17 @@
 import { useState, useEffect } from "react";
 import { SearchIcon, Trophy, Users } from "lucide-react";
 import { apiClient } from "../lib/api";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function Search() {
-  const [query, setQuery] = useState("");
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const initialQuery = searchParams.get('q') || "";
+
+  const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<{teams: any[], leagues: any[]}>({ teams: [], leagues: [] });
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (query.length < 3) {
@@ -26,20 +32,25 @@ export default function Search() {
     return () => clearTimeout(timer);
   }, [query]);
 
+  // Handle setting document title for SEO
+  useEffect(() => {
+    document.title = "Search Teams & Leagues | Football.World";
+  }, []);
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
        <div className="sticky top-16 z-10 pt-4 pb-8 bg-primary-dark transition-colors">
-          <div className="relative">
-             <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-zinc-400" />
+         <div className="relative">
+             <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-accent-blue" />
              <input 
                type="text" 
                placeholder="Search teams, leagues, players..." 
                value={query}
                onChange={e => setQuery(e.target.value)}
-               className="w-full pl-14 pr-6 py-4 rounded-full glass-panel bg-white/5 outline-none focus:ring-2 focus:ring-accent-blue/50 text-sm md:text-base font-medium transition-all"
+               className="w-full pl-12 pr-12 py-4 rounded-xl glass-panel bg-white/5 border border-white/10 outline-none focus:ring-1 focus:ring-accent-blue focus:border-accent-blue text-sm md:text-base font-medium transition-all shadow-inner"
              />
              {loading && (
-                <div className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 border-2 border-accent-blue border-t-transparent rounded-full animate-spin"></div>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 border-2 border-accent-blue border-t-transparent rounded-full animate-spin"></div>
              )}
           </div>
        </div>
@@ -58,11 +69,17 @@ export default function Search() {
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                    {results.teams.map((t: any, i) => (
-                      <div key={i} className="glass-panel p-4 flex items-center gap-4 hover:border-accent-blue/50 transition-colors cursor-pointer group">
-                         <img src={t.team.logo} className="w-12 h-12 object-contain group-hover:scale-110 transition-transform" />
+                      <div 
+                         key={i} 
+                         onClick={() => navigate(`/team/${t.team.id}`)}
+                         className="glass-panel p-4 flex items-center gap-4 hover:bg-white/10 hover:border-accent-blue/50 transition-colors cursor-pointer group border border-white/5 rounded-xl"
+                      >
+                         <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center p-1 shadow-inner">
+                           <img src={t.team.logo} className="w-full h-full object-contain group-hover:scale-110 transition-transform" />
+                         </div>
                          <div>
-                            <h4 className="font-bold">{t.team.name}</h4>
-                            <p className="text-xs text-zinc-500">{t.team.country}</p>
+                            <h4 className="font-bold text-sm tracking-tight">{t.team.name}</h4>
+                            <p className="text-[10px] text-zinc-500 font-mono tracking-widest uppercase mt-0.5">{t.team.country}</p>
                          </div>
                       </div>
                    ))}
@@ -77,11 +94,15 @@ export default function Search() {
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                    {results.leagues.map((l: any, i) => (
-                      <div key={i} className="glass-panel p-4 flex items-center gap-4 hover:border-accent-blue/50 transition-colors cursor-pointer group">
-                         <img src={l.league.logo} className="w-12 h-12 object-contain group-hover:scale-110 transition-transform" />
+                      <div 
+                         key={i} 
+                         onClick={() => navigate(`/league/${l.league.id}`)}
+                         className="glass-panel p-4 flex items-center gap-4 hover:bg-white/10 hover:border-accent-blue/50 transition-colors cursor-pointer group border border-white/5 rounded-xl"
+                      >
+                         <img src={l.league.logo} className="w-12 h-12 object-contain group-hover:scale-110 transition-transform filter drop-shadow-md bg-white/5 p-1 rounded-lg" />
                          <div>
-                            <h4 className="font-bold">{l.league.name}</h4>
-                            <p className="text-xs text-zinc-500">{l.country.name}</p>
+                            <h4 className="font-bold text-sm tracking-tight">{l.league.name}</h4>
+                            <p className="text-[10px] text-zinc-500 font-mono tracking-widest uppercase mt-0.5">{l.country.name}</p>
                          </div>
                       </div>
                    ))}
