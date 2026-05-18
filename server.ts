@@ -100,6 +100,15 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', apiConfigured: !!process.env.API_FOOTBALL_KEY });
 });
 
+app.get('/api/status', async (req, res) => {
+  try {
+    const data = await fetchFromAPI(`${API_URL}/status`);
+    res.json(data);
+  } catch (e: any) {
+    res.status(500).json({ error: 'Status check failed' });
+  }
+});
+
 // Cache and retry system
 const cache = new Map<string, { data: any; expiry: number }>();
 const inflight = new Map<string, Promise<any>>();
@@ -164,8 +173,7 @@ const fetchFromAPI = async (url: string, retries = 2): Promise<any> => {
 
       // API returned an applications-level error (e.g. auth issue, rate limit hit according to API-sports spec)
       if (hasErrors) {
-         // Return the response directly to avoid further retries, but NEVER cache errors
-         return response.data;
+         return await tryFallbackApi(url, response.data);
       }
       
       // Set cache expiry: 1 min for live, 5 mins for others
@@ -200,7 +208,7 @@ const fetchFromAPI = async (url: string, retries = 2): Promise<any> => {
         await delay(retryDelay);
         return doFetch(currentRetries - 1);
       }
-      throw error;
+      return await tryFallbackApi(url, { errors: { message: error.message } });
     }
   };
 
@@ -215,6 +223,51 @@ const fetchFromAPI = async (url: string, retries = 2): Promise<any> => {
     inflight.delete(url);
     throw err;
   }
+};
+
+// Fallback logic mapping OpenFootball / TheSportsDB to API-Sports structure structure when primary fails
+const tryFallbackApi = async (url: string, originalErrorData: any) => {
+   // Determine what to return based on URL
+   if (url.includes('/status')) return originalErrorData;
+   
+   // Fallback mock/open data wrapper to prevent full application crash
+   const tsdbBase = 'https://www.thesportsdb.com/api/v1/json/3';
+   try {
+     if (url.includes('live=all')) {
+        // Just return empty array for live on fallback
+        return { response: [], fallback: true };
+     } else if (url.includes('fixtures?date=') || url.includes('next=')) {
+        // Map today's events if date matches
+        const dateMatch = url.match(/date=([^&]+)/);
+        const date = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
+        const res = await axios.get(`${tsdbBase}/eventsday.php?d=${date}&s=Soccer`);
+        const events = res.data?.events || [];
+        
+        const mapped = events.map((e: any) => ({
+           fixture: {
+             id: e.idEvent,
+             date: e.strTimestamp || e.dateEvent,
+             status: { elapsed: null, short: 'NS' }
+           },
+           league: { name: e.strLeague, logo: e.strLeagueBadge },
+           teams: {
+              home: { name: e.strHomeTeam, logo: e.strHomeTeamBadge || 'https://media.api-sports.io/football/teams/1.png' },
+              away: { name: e.strAwayTeam, logo: e.strAwayTeamBadge || 'https://media.api-sports.io/football/teams/2.png' }
+           },
+           goals: { home: e.intHomeScore, away: e.intAwayScore }
+        }));
+        
+        return { response: mapped, fallback: true };
+     } else if (url.includes('league=')) {
+         return { response: [], fallback: true };
+     } else if (url.includes('search=')) {
+         return { response: [], fallback: true }; 
+     }
+     
+     return originalErrorData;
+   } catch {
+     return originalErrorData;
+   }
 };
 
 app.get('/api/live', async (req, res) => {

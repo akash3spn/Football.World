@@ -8,18 +8,29 @@ export default function SmartSearch() {
   const [results, setResults] = useState<{ teams: any[]; leagues: any[] }>({ teams: [], leagues: [] });
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        if (!query.trim()) {
+           setIsExpanded(false);
+        }
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [query]);
+
+  useEffect(() => {
+    if (isExpanded && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isExpanded]);
 
   useEffect(() => {
     if (!query.trim()) {
@@ -33,7 +44,6 @@ export default function SmartSearch() {
       setIsOpen(true);
       try {
         const data = await searchEntities(query);
-        // api returns { teams: [...], leagues: [...] }
         setResults({ 
           teams: data.teams?.slice(0, 5) || [], 
           leagues: data.leagues?.slice(0, 3) || [] 
@@ -43,7 +53,7 @@ export default function SmartSearch() {
       } finally {
         setLoading(false);
       }
-    }, 300); // 300ms debounce
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [query]);
@@ -51,45 +61,60 @@ export default function SmartSearch() {
   const handleSelectTeam = (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     navigate(`/team/${id}`);
-    setIsOpen(false);
-    setQuery('');
+    resetSearch();
   };
 
   const handleSelectLeague = (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     navigate(`/league/${id}`);
-    setIsOpen(false);
+    resetSearch();
+  };
+
+  const resetSearch = () => {
     setQuery('');
+    setIsOpen(false);
+    setIsExpanded(false);
   };
 
   const handleClear = () => {
     setQuery('');
     setIsOpen(false);
+    inputRef.current?.focus();
   };
 
   return (
-    <div className="relative w-full md:w-64 lg:w-80 transition-all duration-300 z-50" ref={wrapperRef}>
-      <div className={`relative flex items-center bg-white/5 border border-white/10 rounded-full transition-all focus-within:border-accent-blue focus-within:ring-1 focus-within:ring-accent-blue focus-within:bg-black/50 ${isOpen ? 'rounded-b-none border-b-transparent' : ''}`}>
-        <SearchIcon className="w-4 h-4 text-zinc-400 absolute left-3" />
-        <input 
-          type="text" 
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => { if (query.trim()) setIsOpen(true); }}
-          placeholder="Search teams, leagues..." 
-          className="w-full bg-transparent pl-9 pr-8 py-1.5 text-sm outline-none placeholder:text-zinc-500 font-medium text-white h-[36px]"
-        />
-        {query && !loading && (
-          <button onClick={handleClear} className="absolute right-3 p-0.5 text-zinc-500 hover:text-white transition-colors">
-            <X className="w-3.5 h-3.5" />
-          </button>
-        )}
-        {loading && (
-          <Loader2 className="w-3.5 h-3.5 absolute right-3 text-accent-blue animate-spin" />
-        )}
-      </div>
+    <div className={`relative transition-all duration-300 ease-in-out z-50 ${isExpanded ? 'w-full md:w-64 lg:w-80' : 'w-9'}`} ref={wrapperRef}>
+      {!isExpanded ? (
+        <button 
+          onClick={() => setIsExpanded(true)}
+          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors text-zinc-400 hover:text-white"
+        >
+          <SearchIcon className="w-5 h-5" />
+        </button>
+      ) : (
+        <div className={`relative flex items-center bg-white/5 border border-white/10 rounded-full transition-all focus-within:border-accent-blue focus-within:ring-1 focus-within:ring-accent-blue focus-within:bg-black/50 ${isOpen ? 'rounded-b-none border-b-transparent' : ''}`}>
+          <SearchIcon className="w-4 h-4 text-zinc-400 absolute left-3" />
+          <input 
+            ref={inputRef}
+            type="text" 
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => { if (query.trim()) setIsOpen(true); }}
+            placeholder="Search teams, leagues..." 
+            className="w-full bg-transparent pl-9 pr-8 py-1.5 text-sm outline-none placeholder:text-zinc-500 font-medium text-white h-[36px]"
+          />
+          {query && !loading && (
+            <button onClick={handleClear} className="absolute right-3 p-0.5 text-zinc-500 hover:text-white transition-colors">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {loading && (
+            <Loader2 className="w-3.5 h-3.5 absolute right-3 text-accent-blue animate-spin" />
+          )}
+        </div>
+      )}
 
-      {isOpen && (query.trim().length > 0) && (
+      {isExpanded && isOpen && (query.trim().length > 0) && (
         <div className="absolute top-full left-0 right-0 bg-primary-dark/95 backdrop-blur-xl border border-white/10 border-t-0 rounded-b-xl shadow-2xl overflow-hidden animate-in slide-in-from-top-2 z-50">
           <div className="max-h-[70vh] md:max-h-96 overflow-y-auto hide-scrollbar">
             {loading && results.teams.length === 0 && results.leagues.length === 0 && (
@@ -150,7 +175,10 @@ export default function SmartSearch() {
             
             {((results.teams.length > 0 || results.leagues.length > 0) && !loading) && (
                <div className="p-2 border-t border-white/5">
-                  <button onClick={() => navigate(`/search?q=${query}`)} className="w-full text-center text-[10px] uppercase tracking-widest font-bold text-accent-blue py-2 hover:bg-accent-blue/10 rounded-lg transition-colors">
+                  <button onClick={() => {
+                      navigate(`/search?q=${query}`);
+                      resetSearch();
+                  }} className="w-full text-center text-[10px] uppercase tracking-widest font-bold text-accent-blue py-2 hover:bg-accent-blue/10 rounded-lg transition-colors">
                      View all results
                   </button>
                </div>

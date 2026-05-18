@@ -15,10 +15,32 @@ import { useEffect, useState } from 'react';
 import { Bell, X } from 'lucide-react';
 
 
+import { getStatus } from './lib/api';
+
 export default function App() {
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
+  const [apiUnavailable, setApiUnavailable] = useState(false);
+  const [isCheckingApi, setIsCheckingApi] = useState(true);
 
   useEffect(() => {
+    // Check API status
+    const checkApiStatus = async () => {
+      try {
+        const res = await getStatus();
+        const hasErrors = res.errors && (Array.isArray(res.errors) ? res.errors.length > 0 : Object.keys(res.errors).length > 0);
+        const isActive = res.response?.subscription?.active !== false;
+
+        if (hasErrors || !isActive) {
+           setApiUnavailable(true);
+        }
+      } catch (e) {
+        setApiUnavailable(true);
+      } finally {
+        setIsCheckingApi(false);
+      }
+    };
+    checkApiStatus();
+
     // Check if we should ask for notifications
     const asked = localStorage.getItem('fw_notif_asked');
     if (!asked && 'Notification' in window && Notification.permission === 'default') {
@@ -45,8 +67,24 @@ export default function App() {
     setShowNotifPrompt(false);
   }
 
+  if (isCheckingApi) {
+    return (
+      <div className="min-h-screen bg-[#07090D] flex items-center justify-center">
+         <div className="flex flex-col items-center">
+            <div className="w-12 h-12 border-4 border-[#00D1FF] border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-zinc-400 font-mono text-sm animate-pulse">Initializing Football.World...</p>
+         </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen transition-colors relative">
+      {apiUnavailable && (
+        <div className="bg-red-500/10 text-red-500 text-center py-2 text-xs font-bold font-mono z-50 relative border-b border-red-500/20">
+           Football API connection unavailable. Using fallback data providers.
+        </div>
+      )}
       <Navbar />
       
       <main className="pt-[116px] md:pt-16 pb-20 md:pb-0 min-h-screen">

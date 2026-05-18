@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Trophy, PlusCircle, CheckCircle, Info } from "lucide-react";
+import { Trophy, PlusCircle, CheckCircle, Info, ChevronDown } from "lucide-react";
 import { followEntity, unfollowEntity, getFollows } from "../lib/firebase";
 import { getLeague, getStandings, getLeagueFixtures } from "../lib/api";
 import { format } from "date-fns";
@@ -9,9 +9,12 @@ export default function LeagueProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [leagueData, setLeagueData] = useState<any>(null);
+  const [availableSeasons, setAvailableSeasons] = useState<any[]>([]);
+  const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
   const [standings, setStandings] = useState<any[]>([]);
   const [fixtures, setFixtures] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingSeasonData, setLoadingSeasonData] = useState(false);
   const [following, setFollowing] = useState(false);
 
   useEffect(() => {
@@ -22,28 +25,21 @@ export default function LeagueProfile() {
         if (lgRes.response && lgRes.response.length > 0) {
           const lInfo = lgRes.response[0].league;
           const country = lgRes.response[0].country;
-          let currentSeason = lgRes.response[0].seasons.find((s: any) => s.current);
-          if (!currentSeason && lgRes.response[0].seasons.length > 0) {
-              currentSeason = lgRes.response[0].seasons[lgRes.response[0].seasons.length - 1];
+          const seasons = lgRes.response[0].seasons.sort((a: any, b: any) => b.year - a.year); // Sort descending
+          setAvailableSeasons(seasons);
+          
+          let currentSeason = seasons.find((s: any) => s.current);
+          if (!currentSeason && seasons.length > 0) {
+              currentSeason = seasons[0];
           }
           setLeagueData({
             name: lInfo.name,
             country: lInfo.type === 'World' || lInfo.type === 'Cup' ? 'International' : country.name,
             logo: lInfo.logo,
-            season: currentSeason?.year || new Date().getFullYear()
           });
-
-          // Fetch standings & fixtures
+          
           if (currentSeason?.year) {
-             const stRes = await getStandings(id as string, currentSeason.year);
-             if (stRes.response && stRes.response.length > 0) {
-                setStandings(stRes.response[0].league.standings);
-             }
-             
-             const fixRes = await getLeagueFixtures(id as string, currentSeason.year);
-             if (fixRes.response) {
-                setFixtures(fixRes.response);
-             }
+             setSelectedSeason(currentSeason.year);
           }
         }
 
@@ -57,6 +53,34 @@ export default function LeagueProfile() {
     };
     init();
   }, [id]);
+
+  useEffect(() => {
+    const loadSeasonData = async () => {
+       if (!id || !selectedSeason) return;
+       
+       try {
+         setLoadingSeasonData(true);
+         setStandings([]);
+         setFixtures([]);
+         
+         const stRes = await getStandings(id as string, selectedSeason);
+         if (stRes.response && stRes.response.length > 0) {
+            setStandings(stRes.response[0].league.standings);
+         }
+         
+         const fixRes = await getLeagueFixtures(id as string, selectedSeason);
+         if (fixRes.response) {
+            setFixtures(fixRes.response);
+         }
+       } catch (err) {
+         console.error(err);
+       } finally {
+         setLoadingSeasonData(false);
+       }
+    };
+    
+    loadSeasonData();
+  }, [id, selectedSeason]);
 
   useEffect(() => {
     if (leagueData) {
@@ -84,18 +108,35 @@ export default function LeagueProfile() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-       <div className="glass-panel p-8 rounded-3xl flex items-center justify-between mb-8 overflow-hidden relative">
+       <div className="glass-panel p-8 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between mb-8 overflow-hidden relative gap-4">
           <div className="absolute right-0 top-0 w-64 h-64 bg-accent-blue/10 blur-3xl rounded-full"></div>
           
           <div className="relative z-10 flex items-center gap-6">
               <img src={leagueData.logo} className="w-20 h-20 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]" alt={leagueData.name} />
               <div>
                  <h1 className="text-3xl font-black">{leagueData.name}</h1>
-                 <p className="text-zinc-400 font-mono text-sm">{leagueData.country}</p>
+                 <p className="text-zinc-400 font-mono text-sm mb-2">{leagueData.country}</p>
+                 {availableSeasons.length > 0 && (
+                   <div className="relative inline-block w-32">
+                     <select
+                       value={selectedSeason || ''}
+                       onChange={(e) => setSelectedSeason(Number(e.target.value))}
+                       className="w-full appearance-none bg-white/5 border border-white/20 text-white text-sm font-bold py-1.5 pl-3 pr-8 rounded-lg outline-none focus:border-accent-blue/50 cursor-pointer"
+                       disabled={loadingSeasonData}
+                     >
+                       {availableSeasons.map((season) => (
+                         <option key={season.year} value={season.year} className="bg-[#111]">
+                           {season.year} {season.current ? '(Current)' : ''}
+                         </option>
+                       ))}
+                     </select>
+                     <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                   </div>
+                 )}
               </div>
           </div>
           
-          <div className="relative z-10 mt-3 flex items-center gap-2">
+          <div className="relative z-10 flex items-center gap-2">
             <button onClick={toggleFollow} className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all border ${following ? 'bg-accent-blue/10 text-accent-blue border-accent-blue' : 'bg-white/5 border-white/20 hover:border-accent-blue/50'}`}>
                {following ? <><CheckCircle className="w-4 h-4" /> Following</> : <><PlusCircle className="w-4 h-4" /> Follow</>}
             </button>
@@ -110,7 +151,12 @@ export default function LeagueProfile() {
        <div className="space-y-6">
           <h3 className="text-lg font-bold">Standings & Groups</h3>
           
-          {standings.length === 0 ? (
+          {loadingSeasonData ? (
+             <div className="p-12 text-center glass-panel border border-white/5 rounded-2xl">
+                 <div className="w-8 h-8 border-2 border-accent-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                 <p className="text-zinc-500 text-sm">Loading season data...</p>
+             </div>
+          ) : standings.length === 0 ? (
             <div className="p-12 text-center glass-panel border border-white/5 rounded-2xl">
                <Trophy className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
                <p className="text-zinc-500">Official standings information is currently unavailable.</p>

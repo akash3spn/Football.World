@@ -12,6 +12,11 @@ export const apiClient = axios.create({
   },
 });
 
+export const getStatus = async () => {
+  const res = await apiClient.get('/status');
+  return res.data;
+};
+
 export const getLiveFixtures = async () => {
   const res = await apiClient.get('/live');
   return res.data;
