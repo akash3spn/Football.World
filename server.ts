@@ -6,6 +6,9 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { Server as SocketIOServer } from 'socket.io';
 import { createServer as createHttpServer } from 'http';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
+import fs from 'fs';
 
 dotenv.config();
 
@@ -20,42 +23,124 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
+// Initialize Firebase for Backend Caching
+let db: any = null;
+try {
+  const fbConfigPath = path.join(process.cwd(), 'firebase-applet-config.json');
+  if (fs.existsSync(fbConfigPath)) {
+    const firebaseConfig = JSON.parse(fs.readFileSync(fbConfigPath, 'utf8'));
+    const fbApp = initializeApp(firebaseConfig, 'backend-app');
+    db = getFirestore(fbApp, firebaseConfig.firestoreDatabaseId);
+    console.log("Firebase Backend Cache Initialized");
+  }
+} catch (e) {
+  console.error("Firebase Backend Cache Init Failed", e);
+}
+
 // API endpoints
-const API_KEY = process.env.API_FOOTBALL_KEY;
 const API_HOST = 'v3.football.api-sports.io';
 const API_URL = `https://${API_HOST}`;
 
-const apiParams = {
+// Use proper headers directly
+const getApiHeaders = () => ({
   headers: {
-    'x-apisports-key': API_KEY,
+    'x-apisports-key': process.env.API_FOOTBALL_KEY,
   },
-};
-
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', apiConfigured: !!API_KEY });
 });
 
-// Mock/fallback response for when API key is not configured, to ensure app doesn't crash
-const getFallbackData = (type: string) => {
-  if (type === 'fixtures') {
-    return {
-      get: "fixtures",
-      results: 0,
-      paging: { current: 1, total: 1 },
-      response: []
-    };
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', apiConfigured: !!process.env.API_FOOTBALL_KEY });
+});
+
+// Cache and retry system
+const cache = new Map<string, { data: any; expiry: number }>();
+
+const fetchFromAPI = async (url: string, retries = 3): Promise<any> => {
+  // Check memory cache first
+  if (cache.has(url)) {
+    const cached = cache.get(url)!;
+    if (Date.now() < cached.expiry) {
+      return cached.data;
+    }
+    cache.delete(url);
   }
-  return [];
+
+  // Create a safe document ID from the URL
+  const docId = Buffer.from(url).toString('base64').replace(/[/+=]/g, '_');
+  
+  // Check Firebase cache
+  if (db) {
+    try {
+      const docRef = doc(db, 'cache', docId);
+      const snapshot = await getDoc(docRef);
+      if (snapshot.exists()) {
+        const cached = snapshot.data();
+        if (Date.now() < cached.expiry) {
+          cache.set(url, { data: cached.data, expiry: cached.expiry }); // Sync to memory
+          return cached.data;
+        }
+      }
+    } catch (e) {
+      console.error("Firebase Cache Read Error", e);
+    }
+  }
+
+  try {
+    const response = await axios.get(url, getApiHeaders());
+    
+    const hasErrors = response.data && response.data.errors && 
+      (Array.isArray(response.data.errors) 
+        ? response.data.errors.length > 0 
+        : Object.keys(response.data.errors).length > 0);
+
+    if (hasErrors) {
+       // Instead of throwing and retrying, we'll return the response so the frontend
+       // doesn't crash, but we won't cache this error state to Firebase.
+       return response.data;
+    }
+    
+    // Set expiry (e.g. 5 minutes for general endpoints, 1 min for live)
+    const isLive = url.includes('live=all');
+    const expiryTime = Date.now() + (isLive ? 60000 : 300000);
+    const dataToCache = response.data;
+    
+    // Save to Memory Cache
+    cache.set(url, { data: dataToCache, expiry: expiryTime });
+
+    // Save to Firebase Cache (in background)
+    if (db) {
+       setDoc(doc(db, 'cache', docId), {
+         url,
+         data: dataToCache,
+         expiry: expiryTime,
+         updatedAt: Date.now()
+       }).catch(e => console.error("Firebase Cache Write Error", e));
+    }
+
+    return dataToCache;
+  } catch (error: any) {
+    if (retries > 0) {
+      console.warn(`Retrying... (${retries} left) for ${url}`);
+      await new Promise(r => setTimeout(r, 1000));
+      return fetchFromAPI(url, retries - 1);
+    }
+    throw error;
+  }
 };
 
+app.get('/api/live', async (req, res) => {
+  try {
+    const data = await fetchFromAPI(`${API_URL}/fixtures?live=all`);
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed' });
+  }
+});
 
 app.get('/api/fixtures/live', async (req, res) => {
-  if (!API_KEY) {
-    return res.json(getFallbackData('fixtures'));
-  }
   try {
-    const response = await axios.get(`${API_URL}/fixtures?live=all`, apiParams);
-    res.json(response.data);
+    const data = await fetchFromAPI(`${API_URL}/fixtures?live=all`);
+    res.json(data);
   } catch (error: any) {
     console.error('API Error:', error?.response?.data || error.message);
     res.status(500).json({ error: 'Failed to fetch live fixtures' });
@@ -63,16 +148,13 @@ app.get('/api/fixtures/live', async (req, res) => {
 });
 
 app.get('/api/fixtures', async (req, res) => {
-  if (!API_KEY) {
-    return res.json(getFallbackData('fixtures'));
-  }
   try {
     const { date } = req.query; // format YYYY-MM-DD
     if (!date) {
         return res.status(400).json({ error: 'Date parameter is required' });
     }
-    const response = await axios.get(`${API_URL}/fixtures?date=${date}`, apiParams);
-    res.json(response.data);
+    const data = await fetchFromAPI(`${API_URL}/fixtures?date=${date}`);
+    res.json(data);
   } catch (error: any) {
     console.error('API Error:', error?.response?.data || error.message);
     res.status(500).json({ error: 'Failed to fetch fixtures' });
@@ -80,27 +162,23 @@ app.get('/api/fixtures', async (req, res) => {
 });
 
 app.get('/api/fixtures/upcoming', async (req, res) => {
-  if (!API_KEY) {
-    return res.json(getFallbackData('fixtures'));
-  }
   try {
     const today = new Date();
     const dateStr = today.toISOString().split('T')[0];
-    // Fetch fixtures for the current date. Also we can specify status=NS to get upcoming ones
-    const response = await axios.get(`${API_URL}/fixtures?date=${dateStr}&status=NS`, apiParams);
+    const data = await fetchFromAPI(`${API_URL}/fixtures?date=${dateStr}&status=NS`);
     
-    let upcoming = response.data.response || [];
+    let upcoming = data.response || [];
     
     // If very few upcoming today, fetch tomorrow's
     if (upcoming.length < 5) {
        const tomorrow = new Date(today);
        tomorrow.setDate(tomorrow.getDate() + 1);
        const tmrwStr = tomorrow.toISOString().split('T')[0];
-       const tomorrowRes = await axios.get(`${API_URL}/fixtures?date=${tmrwStr}&status=NS`, apiParams);
-       upcoming = [...upcoming, ...(tomorrowRes.data.response || [])];
+       const tomorrowData = await fetchFromAPI(`${API_URL}/fixtures?date=${tmrwStr}&status=NS`);
+       upcoming = [...upcoming, ...(tomorrowData.response || [])];
     }
 
-    res.json({ ...response.data, response: upcoming });
+    res.json({ ...data, response: upcoming });
   } catch (error: any) {
     console.error('API Error:', error?.response?.data || error.message);
     res.status(500).json({ error: 'Failed to fetch upcoming fixtures' });
@@ -111,8 +189,8 @@ app.get('/api/fixtures/league', async (req, res) => {
   try {
     const { league, season } = req.query;
     if (!league || !season) return res.status(400).json({ error: 'League and season required' });
-    const response = await axios.get(`${API_URL}/fixtures?league=${league}&season=${season}`, apiParams);
-    res.json(response.data);
+    const data = await fetchFromAPI(`${API_URL}/fixtures?league=${league}&season=${season}`);
+    res.json(data);
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch league fixtures' });
   }
@@ -121,14 +199,10 @@ app.get('/api/fixtures/league', async (req, res) => {
 app.get('/api/teams', async (req, res) => {
   try {
     const q = req.query.id;
-    const response = await axios.get(`${API_URL}/teams?id=${q}`, apiParams);
-    res.json(response.data);
+    const data = await fetchFromAPI(`${API_URL}/teams?id=${q}`);
+    res.json(data);
   } catch (err: any) {
-    if (err.response) {
-      res.status(err.response.status).json(err.response.data);
-    } else {
-      res.status(500).json({ error: 'Failed to fetch team data' });
-    }
+    res.status(500).json({ error: 'Failed to fetch team data' });
   }
 });
 
@@ -136,10 +210,32 @@ app.get('/api/fixtures/id', async (req, res) => {
   try {
     const { id } = req.query;
     if (!id) return res.status(400).json({ error: 'Fixture id required' });
-    const response = await axios.get(`${API_URL}/fixtures?id=${id}`, apiParams);
-    res.json(response.data);
+    const data = await fetchFromAPI(`${API_URL}/fixtures?id=${id}`);
+    res.json(data);
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch fixture' });
+  }
+});
+
+app.get('/api/fixtures/events', async (req, res) => {
+  try {
+    const { id } = req.query;
+    if (!id) return res.status(400).json({ error: 'Fixture id required' });
+    const data = await fetchFromAPI(`${API_URL}/fixtures/events?fixture=${id}`);
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch fixture events' });
+  }
+});
+
+app.get('/api/fixtures/statistics', async (req, res) => {
+  try {
+    const { id } = req.query;
+    if (!id) return res.status(400).json({ error: 'Fixture id required' });
+    const data = await fetchFromAPI(`${API_URL}/fixtures/statistics?fixture=${id}`);
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch fixture statistics' });
   }
 });
 
@@ -147,13 +243,13 @@ app.get('/api/team/fixtures', async (req, res) => {
   try {
     const { id } = req.query;
     if (!id) return res.status(400).json({ error: 'Team id required' });
-    const [lastRes, nextRes] = await Promise.all([
-      axios.get(`${API_URL}/fixtures?team=${id}&last=5`, apiParams),
-      axios.get(`${API_URL}/fixtures?team=${id}&next=5`, apiParams)
+    const [lastData, nextData] = await Promise.all([
+      fetchFromAPI(`${API_URL}/fixtures?team=${id}&last=5`),
+      fetchFromAPI(`${API_URL}/fixtures?team=${id}&next=5`)
     ]);
     res.json({
-      last: lastRes.data.response || [],
-      next: nextRes.data.response || []
+      last: lastData.response || [],
+      next: nextData.response || []
     });
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to fetch team fixtures' });
@@ -164,8 +260,8 @@ app.get('/api/team/squad', async (req, res) => {
   try {
     const { id } = req.query;
     if (!id) return res.status(400).json({ error: 'Team id required' });
-    const response = await axios.get(`${API_URL}/players/squads?team=${id}`, apiParams);
-    res.json(response.data);
+    const data = await fetchFromAPI(`${API_URL}/players/squads?team=${id}`);
+    res.json(data);
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to fetch team squad' });
   }
@@ -175,8 +271,8 @@ app.get('/api/team/coach', async (req, res) => {
   try {
     const { id } = req.query;
     if (!id) return res.status(400).json({ error: 'Team id required' });
-    const response = await axios.get(`${API_URL}/coachs?team=${id}`, apiParams);
-    res.json(response.data);
+    const data = await fetchFromAPI(`${API_URL}/coachs?team=${id}`);
+    res.json(data);
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to fetch team coach' });
   }
@@ -185,8 +281,8 @@ app.get('/api/team/coach', async (req, res) => {
 app.get('/api/league', async (req, res) => {
   try {
     const q = req.query.id;
-    const response = await axios.get(`${API_URL}/leagues?id=${q}`, apiParams);
-    res.json(response.data);
+    const data = await fetchFromAPI(`${API_URL}/leagues?id=${q}`);
+    res.json(data);
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to fetch league data' });
   }
@@ -195,19 +291,18 @@ app.get('/api/league', async (req, res) => {
 app.get('/api/search', async (req, res) => {
   const { q } = req.query;
   if (!q) return res.json({ teams: [], leagues: [] });
-  if (!API_KEY) {
+  if (!process.env.API_FOOTBALL_KEY) {
       return res.json({
         teams: [],
         leagues: []
       });
   }
   try {
-     const params = { ...apiParams, params: { search: q }};
-     const teamsRes = await axios.get(`${API_URL}/teams`, params);
-     const leaguesRes = await axios.get(`${API_URL}/leagues`, params);
+     const teamsData = await fetchFromAPI(`${API_URL}/teams?search=${q}`);
+     const leaguesData = await fetchFromAPI(`${API_URL}/leagues?search=${q}`);
      res.json({
-         teams: teamsRes.data.response || [],
-         leagues: leaguesRes.data.response || []
+         teams: teamsData.response || [],
+         leagues: leaguesData.response || []
      });
   } catch (error) {
      res.status(500).json({ error: 'Search failed' });
@@ -218,8 +313,8 @@ app.get('/api/standings', async (req, res) => {
   try {
     const { league, season } = req.query;
     if (!league || !season) return res.status(400).json({ error: 'League and season required' });
-    const response = await axios.get(`${API_URL}/standings?league=${league}&season=${season}`, apiParams);
-    res.json(response.data);
+    const data = await fetchFromAPI(`${API_URL}/standings?league=${league}&season=${season}`);
+    res.json(data);
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch standings' });
   }
@@ -287,40 +382,40 @@ async function startServer() {
   httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://localhost:${PORT}`);
     
-    // Simple mock live polling every 30s to broadcast to connected clients
+    // Simple live polling every 30s to broadcast to connected clients
     setInterval(async () => {
        try {
-         if (API_KEY) {
-           const response = await axios.get(`${API_URL}/fixtures?live=all`, apiParams);
-           io.emit('live_updates', response.data);
+         if (process.env.API_FOOTBALL_KEY) {
+           const data = await fetchFromAPI(`${API_URL}/fixtures?live=all`);
+           io.emit('live_updates', data);
          } else {
-           io.emit('live_updates', getFallbackData('fixtures'));
+           io.emit('live_updates', { response: [] });
          }
        } catch (error) {
-         console.error('Socket Live Poll Error');
+         // Quietly ignore polling errors to avoid log spam
        }
     }, 30000);
 
     // Refresh fixtures every 3 minutes
     setInterval(async () => {
        try {
-         if (API_KEY) {
+         if (process.env.API_FOOTBALL_KEY) {
            const today = new Date();
            const dateStr = today.toISOString().split('T')[0];
-           const response = await axios.get(`${API_URL}/fixtures?date=${dateStr}&status=NS`, apiParams);
+           const data = await fetchFromAPI(`${API_URL}/fixtures?date=${dateStr}&status=NS`);
            
-           let upcoming = response.data.response || [];
+           let upcoming = data.response || [];
            if (upcoming.length < 5) {
               const tomorrow = new Date(today);
               tomorrow.setDate(tomorrow.getDate() + 1);
               const tmrwStr = tomorrow.toISOString().split('T')[0];
-              const tomorrowRes = await axios.get(`${API_URL}/fixtures?date=${tmrwStr}&status=NS`, apiParams);
-              upcoming = [...upcoming, ...(tomorrowRes.data.response || [])];
+              const tomorrowData = await fetchFromAPI(`${API_URL}/fixtures?date=${tmrwStr}&status=NS`);
+              upcoming = [...upcoming, ...(tomorrowData.response || [])];
            }
-           io.emit('upcoming_updates', { ...response.data, response: upcoming });
+           io.emit('upcoming_updates', { ...data, response: upcoming });
          }
        } catch (error) {
-         console.error('Socket upcoming update error');
+         // Quietly ignore polling errors to avoid log spam
        }
     }, 180000);
   });

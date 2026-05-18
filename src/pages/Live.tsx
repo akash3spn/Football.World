@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 export default function Live() {
   const [liveFixtures, setLiveFixtures] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -15,15 +16,23 @@ export default function Live() {
 
     socket.connect();
     socket.on('live_updates', (data) => {
-      if (data?.response) {
+      if (data?.errors && Object.keys(data.errors).length > 0) {
+        setApiError(Object.values(data.errors).join(', '));
+      } else if (data?.response) {
         setLiveFixtures(data.response);
+        setApiError(null);
       }
     });
 
     const init = async () => {
       try {
         const live = await getLiveFixtures();
-        if (live?.response) setLiveFixtures(live.response);
+        if (live?.errors && Object.keys(live.errors).length > 0) {
+           setApiError(Object.values(live.errors).join(', '));
+        } else if (live?.response) {
+           setLiveFixtures(live.response);
+           setApiError(null);
+        }
       } catch (err) { }
       finally {
         setLoading(false);
@@ -56,6 +65,13 @@ export default function Live() {
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1,2,3,4,5,6].map(i => <div key={i} className="h-48 glass-panel animate-pulse rounded-xl" />)}
            </div>
+        </div>
+      ) : apiError ? (
+        <div className="flex items-center justify-center py-20 border border-red-500/20 rounded-xl bg-red-500/5 text-center">
+            <div className="space-y-4">
+              <h3 className="text-xl font-bold text-red-400">API Error</h3>
+              <p className="text-zinc-300">{apiError}</p>
+            </div>
         </div>
       ) : liveFixtures.length === 0 ? (
         <div className="flex items-center justify-center py-20 border border-white/10 rounded-xl glass-panel text-center">

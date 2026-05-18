@@ -11,6 +11,7 @@ export default function Home() {
   const [upcoming, setUpcoming] = useState<any[]>([]);
   const [news, setNews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,13 +19,18 @@ export default function Home() {
 
     socket.connect();
     socket.on('live_updates', (data) => {
-      if (data?.response) {
+      if (data?.errors && Object.keys(data.errors).length > 0) {
+        setApiError(Object.values(data.errors).join(', '));
+      } else if (data?.response) {
         setLiveFixtures(data.response);
+        setApiError(null);
       }
     });
 
     socket.on('upcoming_updates', (data) => {
-      if (data?.response) {
+      if (data?.errors && Object.keys(data.errors).length > 0) {
+        setApiError(Object.values(data.errors).join(', '));
+      } else if (data?.response) {
         setUpcoming(data.response);
       }
     });
@@ -36,7 +42,11 @@ export default function Home() {
           getUpcomingFixtures(),
           getNews()
         ]);
-        if (live?.response) setLiveFixtures(live.response);
+        if (live?.errors && Object.keys(live.errors).length > 0) {
+          setApiError(Object.values(live.errors).join(', '));
+        } else if (live?.response) {
+          setLiveFixtures(live.response);
+        }
         if (up?.response) setUpcoming(up.response);
         if (n?.articles) setNews(n.articles);
       } catch (err) {
@@ -80,6 +90,10 @@ export default function Home() {
             <div className="h-48 glass-panel rounded-2xl flex items-center justify-center animate-pulse">
                <span className="text-zinc-500 text-sm">Loading official football data...</span>
             </div>
+          ) : apiError ? (
+            <div className="h-32 flex items-center justify-center border border-red-500/20 rounded-2xl bg-red-500/5">
+               <p className="text-red-400 text-sm font-bold">{apiError}</p>
+            </div>
           ) : liveFixtures.length === 0 ? (
             <div className="h-32 flex items-center justify-center border border-white/5 rounded-2xl bg-white/5">
                <p className="text-zinc-500 text-sm">No live matches currently.</p>
@@ -107,6 +121,10 @@ export default function Home() {
                <div className="flex flex-col gap-3 py-4">
                   <span className="text-zinc-500 text-sm text-center">Loading official football data...</span>
                   {[1,2,3,4].map(i => <div key={i} className="h-20 glass-panel rounded-xl animate-pulse"></div>)}
+               </div>
+            ) : apiError ? (
+               <div className="p-6 text-center border border-red-500/20 rounded-xl bg-red-500/5">
+                 <p className="text-red-400 text-sm font-bold">{apiError}</p>
                </div>
             ) : upcoming.length === 0 ? (
                <div className="p-6 text-center border border-white/5 rounded-xl bg-white/5">

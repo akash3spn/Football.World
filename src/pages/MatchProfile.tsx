@@ -1,21 +1,48 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getMatch } from "../lib/api";
+import { getMatch, getMatchEvents, getMatchStatistics } from "../lib/api";
 import { format } from "date-fns";
 
 export default function MatchProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [matchData, setMatchData] = useState<any>(null);
+  const [events, setEvents] = useState<any[]>([]);
+  const [stats, setStats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const init = async () => {
       try {
         setLoading(true);
-        const res = await getMatch(id as string);
+        const [res, eventsRes, statsRes] = await Promise.all([
+           getMatch(id as string),
+           getMatchEvents(id as string).catch(() => null),
+           getMatchStatistics(id as string).catch(() => null)
+        ]);
+
         if (res.response && res.response.length > 0) {
            setMatchData(res.response[0]);
+           if (eventsRes && eventsRes.response) setEvents(eventsRes.response);
+           if (statsRes && statsRes.response) setStats(statsRes.response);
+
+           if (['1H', '2H', 'HT', 'ET', 'P', 'LIVE'].includes(res.response[0].fixture.status.short)) {
+              // It's live
+              setInterval(async () => {
+                 try {
+                    const [upRes, upEv, upSt] = await Promise.all([
+                       getMatch(id as string),
+                       getMatchEvents(id as string).catch(() => null),
+                       getMatchStatistics(id as string).catch(() => null)
+                    ]);
+                    if (upRes.response && upRes.response.length > 0) {
+                       setMatchData(upRes.response[0]);
+                    }
+                    if (upEv && upEv.response) setEvents(upEv.response);
+                    if (upSt && upSt.response) setStats(upSt.response);
+                 } catch (e) {}
+              }, 30000);
+           }
         }
       } catch (err) {
         console.error(err);
@@ -99,15 +126,46 @@ export default function MatchProfile() {
                 <p><span className="text-zinc-500">City:</span> {fixture.venue?.city || 'TBA'}</p>
                 <p><span className="text-zinc-500">Country:</span> {league.country}</p>
              </div>
+
+             {stats.length > 0 && (
+               <div className="mt-8">
+                 <h3 className="font-bold uppercase tracking-widest text-zinc-500 text-sm mb-4 border-b border-white/10 pb-2">Match Stats</h3>
+                 <div className="space-y-3 font-mono text-xs text-zinc-300">
+                    <div className="flex justify-between items-center mb-2 font-bold text-white">
+                       <span className="w-1/3 text-left">{stats[0]?.team?.name}</span>
+                       <span className="w-1/3 text-center">STAT</span>
+                       <span className="w-1/3 text-right">{stats[1]?.team?.name || 'Away'}</span>
+                    </div>
+                    {stats[0]?.statistics?.slice(0,8).map((st: any, idx: number) => (
+                       <div key={idx} className="flex justify-between items-center bg-white/5 p-2 rounded">
+                          <span className="w-1/3 text-left">{st.value ?? 0}</span>
+                          <span className="w-1/3 text-center text-zinc-500">{st.type}</span>
+                          <span className="w-1/3 text-right">{stats[1]?.statistics?.[idx]?.value ?? 0}</span>
+                       </div>
+                    ))}
+                 </div>
+               </div>
+             )}
           </div>
 
           <div className="glass-panel p-6 rounded-2xl">
-             <h3 className="font-bold uppercase tracking-widest text-zinc-500 text-sm mb-4 border-b border-white/10 pb-2">Status</h3>
-             <div className="space-y-3 font-mono text-sm text-zinc-300">
-                <p><span className="text-zinc-500">Time Elapsed:</span> {fixture.status.elapsed ? `${fixture.status.elapsed}'` : 'N/A'}</p>
-                <p><span className="text-zinc-500">Half Time Score:</span> {score?.halftime?.home ?? '-'} - {score?.halftime?.away ?? '-'}</p>
-                <p><span className="text-zinc-500">Full Time Score:</span> {score?.fulltime?.home ?? '-'} - {score?.fulltime?.away ?? '-'}</p>
-             </div>
+             <h3 className="font-bold uppercase tracking-widest text-zinc-500 text-sm mb-4 border-b border-white/10 pb-2">Match Events</h3>
+             {events.length > 0 ? (
+               <div className="space-y-3 font-mono text-sm text-zinc-300 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                  {events.map((ev: any, idx: number) => (
+                     <div key={idx} className="flex items-center gap-3 bg-white/5 p-3 rounded-lg border border-white/5">
+                        <div className="text-accent-blue font-bold w-10 shrink-0">{ev.time.elapsed}'</div>
+                        <img src={ev.team.logo} className="w-4 h-4 object-contain" alt="team" />
+                        <div className="flex-1">
+                           <p className="font-bold">{ev.player.name}</p>
+                           <p className="text-xs text-zinc-500">{ev.type} - {ev.detail}</p>
+                        </div>
+                     </div>
+                  ))}
+               </div>
+             ) : (
+                <div className="text-zinc-500 text-sm font-mono p-4 text-center">No events available yet.</div>
+             )}
           </div>
        </div>
     </div>

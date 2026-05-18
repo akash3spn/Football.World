@@ -13,7 +13,7 @@ export const apiClient = axios.create({
 });
 
 export const getLiveFixtures = async () => {
-  const res = await apiClient.get('/fixtures/live');
+  const res = await apiClient.get('/live');
   return res.data;
 };
 
@@ -29,6 +29,16 @@ export const getUpcomingFixtures = async () => {
 
 export const getMatch = async (id: string | number) => {
   const res = await apiClient.get(`/fixtures/id?id=${id}`);
+  return res.data;
+};
+
+export const getMatchEvents = async (id: string | number) => {
+  const res = await apiClient.get(`/fixtures/events?id=${id}`);
+  return res.data;
+};
+
+export const getMatchStatistics = async (id: string | number) => {
+  const res = await apiClient.get(`/fixtures/statistics?id=${id}`);
   return res.data;
 };
 

@@ -20,6 +20,10 @@ service cloud.firestore {
         && data.createdAt is timestamp;
     }
 
+    match /cache/{docId} {
+      allow read, write: if true;
+    }
+
     match /users/{userId} {
       allow get: if isOwner(userId);
       allow list: if false;
