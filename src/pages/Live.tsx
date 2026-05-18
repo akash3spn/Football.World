@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { getLiveFixtures } from '../lib/api';
 import { socket } from '../lib/socket';
-import { Radio } from 'lucide-react';
+import { Bell, BellOff, Radio } from 'lucide-react';
+import { followMatch, unfollowMatch } from '../lib/firebase';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 
@@ -9,10 +10,21 @@ export default function Live() {
   const [liveFixtures, setLiveFixtures] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [followedMatches, setFollowedMatches] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
 
   useEffect(() => {
     document.title = "Live Football Scores & Match Updates | Football.World";
+    
+    // Load followed matches
+    try {
+       const str = localStorage.getItem('fw_follows');
+       if (str) {
+           const follows = JSON.parse(str);
+           const matchIds = follows.filter((f:any) => f.entityType === 'match').map((f:any) => f.entityId);
+           setFollowedMatches(new Set(matchIds));
+       }
+    } catch(e) {}
 
     socket.connect();
     socket.on('live_updates', (data) => {
@@ -89,15 +101,40 @@ export default function Live() {
                initial={{ opacity: 0, scale: 0.95 }}
                animate={{ opacity: 1, scale: 1 }}
                transition={{ delay: i * 0.05 }}
-               onClick={() => navigate(`/match/${match.fixture.id}`)}
-               className="glass-panel p-5 rounded-xl group hover:border-[#00D1FF]/50 hover:bg-[#00D1FF]/5 transition-all cursor-pointer border border-white/5"
+               className="glass-panel p-5 rounded-xl group hover:border-[#00D1FF]/50 hover:bg-[#00D1FF]/5 transition-all border border-white/5 relative"
              >
-                <div className="flex justify-between items-center mb-6">
-                  <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest truncate">{match.league.name}</span>
+                <div className="absolute top-4 right-4 z-10">
+                   <button 
+                      onClick={async (e) => {
+                         e.stopPropagation();
+                         const isFollowed = followedMatches.has(String(match.fixture.id));
+                         if (isFollowed) {
+                            await unfollowMatch(String(match.fixture.id));
+                            setFollowedMatches(prev => {
+                               const next = new Set(prev);
+                               next.delete(String(match.fixture.id));
+                               return next;
+                            });
+                         } else {
+                            const success = await followMatch(String(match.fixture.id));
+                            if (success) {
+                               setFollowedMatches(prev => new Set(prev).add(String(match.fixture.id)));
+                            } else {
+                               alert('Could not enable notifications.');
+                            }
+                         }
+                      }}
+                      className={`p-2 rounded-full backdrop-blur-md border ${followedMatches.has(String(match.fixture.id)) ? 'bg-[#00FF87]/20 border-[#00FF87]/50 text-[#00FF87]' : 'bg-black/40 border-white/10 text-zinc-400 hover:text-white hover:bg-white/10'} transition-all`}
+                    >
+                      {followedMatches.has(String(match.fixture.id)) ? <Bell className="w-4 h-4 fill-current animate-pulse" /> : <BellOff className="w-4 h-4" />}
+                   </button>
+                </div>
+                <div className="flex justify-between items-center mb-6 cursor-pointer" onClick={() => navigate(`/match/${match.fixture.id}`)}>
+                  <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest truncate max-w-[80%] pr-10">{match.league.name}</span>
                   <span className="text-[#00FF87] text-xs font-mono font-bold live-pulse">{match.fixture.status.elapsed}'</span>
                 </div>
                 
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between cursor-pointer" onClick={() => navigate(`/match/${match.fixture.id}`)}>
                    <div className="flex flex-col items-center w-1/3 gap-3">
                      <img src={match.teams.home.logo} className="w-16 h-16 object-contain drop-shadow-lg" />
                      <span className="text-sm font-semibold truncate w-full text-center">{match.teams.home.name}</span>

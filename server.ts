@@ -25,6 +25,54 @@ app.use(express.json());
 
 // Initialize Firebase for Backend Caching
 let db: any = null;
+
+// Initialize Firebase Admin for Push Notifications
+let adminMessaging: any = null;
+import * as admin from 'firebase-admin';
+
+try {
+  const fbConfigPath = path.join(process.cwd(), 'firebase-applet-config.json');
+  if (fs.existsSync(fbConfigPath)) {
+    const firebaseConfig = JSON.parse(fs.readFileSync(fbConfigPath, 'utf8'));
+    
+    // Initialize admin app without credential (will use default or no-op if lacks permission)
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        projectId: firebaseConfig.projectId
+      });
+    }
+    adminMessaging = admin.messaging();
+    console.log("Firebase Admin Messaging Initialized");
+  }
+} catch (e) {
+  console.error("Firebase Admin Init Failed", e);
+}
+
+// API for following matches
+app.post('/api/follow', async (req, res) => {
+  if (!db) return res.status(500).json({ error: "Firebase not initialized" });
+  try {
+     const { matchId, token } = req.body;
+     if (!matchId || !token) return res.status(400).json({ error: "Missing matchId or token" });
+     
+     const docRef = doc(db, 'match_followers', String(matchId));
+     const snap = await getDoc(docRef);
+     if (snap.exists()) {
+       const data = snap.data();
+       const tokens = data.tokens || [];
+       if (!tokens.includes(token)) {
+          await setDoc(docRef, { tokens: [...tokens, token] }, { merge: true });
+       }
+     } else {
+       await setDoc(docRef, { tokens: [token] });
+     }
+     return res.json({ success: true });
+  } catch (e) {
+     console.error(e);
+     return res.status(500).json({ error: "DB Error" });
+  }
+});
+
 try {
   const fbConfigPath = path.join(process.cwd(), 'firebase-applet-config.json');
   if (fs.existsSync(fbConfigPath)) {
@@ -424,11 +472,71 @@ async function startServer() {
     console.log(`Server running on http://localhost:${PORT}`);
     
     // Simple live polling every 30s to broadcast to connected clients
+    let previousLiveMatches: Record<string, any> = {};
+
     setInterval(async () => {
        try {
          if (process.env.API_FOOTBALL_KEY) {
            const data = await fetchFromAPI(`${API_URL}/fixtures?live=all`);
            io.emit('live_updates', data);
+           
+           if (data && data.response && Array.isArray(data.response)) {
+              for (const match of data.response) {
+                const matchId = match.fixture.id;
+                const prevMatch = previousLiveMatches[matchId];
+                
+                let notificationSent = false;
+                let messageBody = '';
+
+                if (prevMatch) {
+                    // Check for new goals
+                    if (match.goals.home > prevMatch.goals.home || match.goals.away > prevMatch.goals.away) {
+                        messageBody = `GOAL! ${match.teams.home.name} ${match.goals.home} - ${match.goals.away} ${match.teams.away.name}`;
+                        notificationSent = true;
+                    }
+                    
+                    // Check for red cards (if statistics array exists and has red cards)
+                    const homeRedsObj = match.statistics?.[0]?.statistics?.find((s:any) => s.type === 'Red Cards');
+                    const awayRedsObj = match.statistics?.[1]?.statistics?.find((s:any) => s.type === 'Red Cards');
+                    const prevHomeRedsObj = prevMatch.statistics?.[0]?.statistics?.find((s:any) => s.type === 'Red Cards');
+                    const prevAwayRedsObj = prevMatch.statistics?.[1]?.statistics?.find((s:any) => s.type === 'Red Cards');
+
+                    const getVal = (obj: any) => obj?.value || 0;
+
+                    if (getVal(homeRedsObj) > getVal(prevHomeRedsObj)) {
+                        messageBody = `RED CARD for ${match.teams.home.name}`;
+                        notificationSent = true;
+                    } else if (getVal(awayRedsObj) > getVal(prevAwayRedsObj)) {
+                        messageBody = `RED CARD for ${match.teams.away.name}`;
+                        notificationSent = true;
+                    }
+                }
+                
+                previousLiveMatches[matchId] = match;
+
+                // Send push notification via Firebase Admin
+                if (notificationSent && adminMessaging && db) {
+                   try {
+                     const snap = await getDoc(doc(db, 'match_followers', String(matchId)));
+                     if (snap.exists()) {
+                       const tokens = snap.data().tokens || [];
+                       if (tokens.length > 0) {
+                          await adminMessaging.sendEachForMulticast({
+                            tokens,
+                            notification: {
+                              title: 'Live Match Update',
+                              body: messageBody,
+                            }
+                          });
+                          console.log(`Notification sent for match ${matchId} to ${tokens.length} users`);
+                       }
+                     }
+                   } catch (e) {
+                     console.error("Failed to send push notification", e);
+                   }
+                }
+              }
+           }
          } else {
            io.emit('live_updates', { response: [] });
          }
