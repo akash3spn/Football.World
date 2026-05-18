@@ -54,8 +54,16 @@ app.get('/api/health', (req, res) => {
 
 // Cache and retry system
 const cache = new Map<string, { data: any; expiry: number }>();
+const inflight = new Map<string, Promise<any>>();
 
-const fetchFromAPI = async (url: string, retries = 3): Promise<any> => {
+// Simple delay function
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Request throttle queue to ensure not too many requests go out instantly
+let lastRequestTime = 0;
+const requestThrottleMs = 250; // Max 4 requests per second
+
+const fetchFromAPI = async (url: string, retries = 2): Promise<any> => {
   // Check memory cache first
   if (cache.has(url)) {
     const cached = cache.get(url)!;
@@ -65,66 +73,99 @@ const fetchFromAPI = async (url: string, retries = 3): Promise<any> => {
     cache.delete(url);
   }
 
-  // Create a safe document ID from the URL
-  const docId = Buffer.from(url).toString('base64').replace(/[/+=]/g, '_');
-  
-  // Check Firebase cache
-  if (db) {
-    try {
-      const docRef = doc(db, 'cache', docId);
-      const snapshot = await getDoc(docRef);
-      if (snapshot.exists()) {
-        const cached = snapshot.data();
-        if (Date.now() < cached.expiry) {
-          cache.set(url, { data: cached.data, expiry: cached.expiry }); // Sync to memory
-          return cached.data;
-        }
-      }
-    } catch (e) {
-      console.error("Firebase Cache Read Error", e);
-    }
+  // If there's an active request for this URL, wait for it instead of duplicating
+  if (inflight.has(url)) {
+    return inflight.get(url);
   }
 
-  try {
-    const response = await axios.get(url, getApiHeaders());
+  const doFetch = async (currentRetries: number): Promise<any> => {
+    // Create a safe document ID from the URL
+    const docId = Buffer.from(url).toString('base64').replace(/[/+=]/g, '_');
     
-    const hasErrors = response.data && response.data.errors && 
-      (Array.isArray(response.data.errors) 
-        ? response.data.errors.length > 0 
-        : Object.keys(response.data.errors).length > 0);
-
-    if (hasErrors) {
-       // Instead of throwing and retrying, we'll return the response so the frontend
-       // doesn't crash, but we won't cache this error state to Firebase.
-       return response.data;
-    }
-    
-    // Set expiry (e.g. 5 minutes for general endpoints, 1 min for live)
-    const isLive = url.includes('live=all');
-    const expiryTime = Date.now() + (isLive ? 60000 : 300000);
-    const dataToCache = response.data;
-    
-    // Save to Memory Cache
-    cache.set(url, { data: dataToCache, expiry: expiryTime });
-
-    // Save to Firebase Cache (in background)
+    // Check Firebase cache
     if (db) {
-       setDoc(doc(db, 'cache', docId), {
-         url,
-         data: dataToCache,
-         expiry: expiryTime,
-         updatedAt: Date.now()
-       }).catch(e => console.error("Firebase Cache Write Error", e));
+      try {
+        const docRef = doc(db, 'cache', docId);
+        const snapshot = await getDoc(docRef);
+        if (snapshot.exists()) {
+          const cached = snapshot.data();
+          if (Date.now() < cached.expiry) {
+            cache.set(url, { data: cached.data, expiry: cached.expiry }); // Sync to memory
+            return cached.data;
+          }
+        }
+      } catch (e) {
+        console.error("Firebase Cache Read Error", e);
+      }
     }
 
-    return dataToCache;
-  } catch (error: any) {
-    if (retries > 0) {
-      console.warn(`Retrying... (${retries} left) for ${url}`);
-      await new Promise(r => setTimeout(r, 1000));
-      return fetchFromAPI(url, retries - 1);
+    try {
+      // Throttle outward requests
+      const now = Date.now();
+      if (now - lastRequestTime < requestThrottleMs) {
+         await delay(requestThrottleMs - (now - lastRequestTime));
+      }
+      lastRequestTime = Date.now();
+
+      const response = await axios.get(url, getApiHeaders());
+      
+      const hasErrors = response.data && response.data.errors && 
+        (Array.isArray(response.data.errors) 
+          ? response.data.errors.length > 0 
+          : Object.keys(response.data.errors).length > 0);
+
+      // API returned an applications-level error (e.g. auth issue, rate limit hit according to API-sports spec)
+      if (hasErrors) {
+         // Return the response directly to avoid further retries, but NEVER cache errors
+         return response.data;
+      }
+      
+      // Set cache expiry: 1 min for live, 5 mins for others
+      const isLive = url.includes('live=all');
+      const isSearch = url.includes('search=');
+      const expiryTime = Date.now() + (isLive ? 30000 : (isSearch ? 86400000 : 300000)); 
+      const dataToCache = response.data;
+      
+      // Save to Memory Cache
+      cache.set(url, { data: dataToCache, expiry: expiryTime });
+
+      // Save to Firebase Cache (in background)
+      if (db) {
+         setDoc(doc(db, 'cache', docId), {
+           url,
+           data: dataToCache,
+           expiry: expiryTime,
+           updatedAt: Date.now()
+         }).catch(e => console.error("Firebase Cache Write Error", e));
+      }
+
+      return dataToCache;
+    } catch (error: any) {
+      const status = error.response?.status;
+      
+      // Do not retry client errors like 401 Unauthorized, 403 Forbidden, 429 Too Many Requests
+      const isClientError = status >= 400 && status < 500;
+      
+      if (currentRetries > 0 && !isClientError) {
+        const retryDelay = 1000 * (3 - currentRetries); // Exponential backoff (1s, 2s)
+        console.warn(`Retrying... (${currentRetries} left) for ${url} after ${retryDelay}ms`);
+        await delay(retryDelay);
+        return doFetch(currentRetries - 1);
+      }
+      throw error;
     }
-    throw error;
+  };
+
+  const promise = doFetch(retries);
+  inflight.set(url, promise);
+
+  try {
+    const result = await promise;
+    inflight.delete(url);
+    return result;
+  } catch (err) {
+    inflight.delete(url);
+    throw err;
   }
 };
 
