@@ -180,7 +180,11 @@ const fetchFromAPI = async (url: string, retries = 2): Promise<any> => {
       const isLive = url.includes('live=all');
       const isSearch = url.includes('search=');
       const isConfig = url.includes('/status');
-      const expiryTime = Date.now() + (isLive ? 30000 : (isSearch ? 86400000 : (isConfig ? 86400000 : 1800000))); 
+      
+      // Events, stats, and specific fixtures can update quickly during match. Cap them at 1 minute.
+      const isMatchData = url.includes('/fixtures?id=') || url.includes('/fixtures/events') || url.includes('/fixtures/statistics');
+      
+      const expiryTime = Date.now() + (isLive ? 30000 : (isSearch ? 86400000 : (isConfig ? 86400000 : (isMatchData ? 60000 : 1800000)))); 
       const dataToCache = response.data;
       
       // Save to Memory Cache
@@ -390,6 +394,28 @@ app.get('/api/fixtures/statistics', async (req, res) => {
     res.json(data);
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch fixture statistics' });
+  }
+});
+
+app.get('/api/fixtures/lineups', async (req, res) => {
+  try {
+    const { id } = req.query;
+    if (!id) return res.status(400).json({ error: 'Fixture id required' });
+    const data = await fetchFromAPI(`${API_URL}/fixtures/lineups?fixture=${id}`);
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch fixture lineups' });
+  }
+});
+
+app.get('/api/fixtures/players', async (req, res) => {
+  try {
+    const { id } = req.query;
+    if (!id) return res.status(400).json({ error: 'Fixture id required' });
+    const data = await fetchFromAPI(`${API_URL}/fixtures/players?fixture=${id}`);
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch fixture players' });
   }
 });
 

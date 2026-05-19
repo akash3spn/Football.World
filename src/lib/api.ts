@@ -47,6 +47,16 @@ export const getMatchStatistics = async (id: string | number) => {
   return res.data;
 };
 
+export const getMatchLineups = async (id: string | number) => {
+  const res = await apiClient.get(`/fixtures/lineups?id=${id}`);
+  return res.data;
+};
+
+export const getMatchPlayers = async (id: string | number) => {
+  const res = await apiClient.get(`/fixtures/players?id=${id}`);
+  return res.data;
+};
+
 export const getNews = async () => {
   const res = await apiClient.get('/news');
   return res.data;
