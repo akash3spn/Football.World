@@ -30,7 +30,7 @@ export default function International() {
          {INTERNATIONAL_TOURNAMENTS.map((league, i) => (
              <motion.div 
                 key={league.id}
-                onClick={() => navigate(`/league/${league.id}`)}
+                onClick={() => navigate(`/international/${league.id}`)}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}

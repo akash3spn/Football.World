@@ -1,12 +1,21 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Trophy, PlusCircle, CheckCircle, Info, ChevronDown } from "lucide-react";
+import { Trophy, PlusCircle, CheckCircle, Info, ChevronDown, ArrowLeft } from "lucide-react";
 import { followEntity, unfollowEntity, getFollows } from "../lib/firebase";
 import { getLeague, getStandings, getLeagueFixtures } from "../lib/api";
 import { socket } from '../lib/socket';
 import { format } from "date-fns";
 
-export default function LeagueProfile() {
+const INTERNATIONAL_TOURNAMENTS: Record<string, any> = {
+  "1": { name: "FIFA World Cup", logo: "https://media.api-sports.io/football/leagues/1.png" },
+  "4": { name: "UEFA Euro", logo: "https://media.api-sports.io/football/leagues/4.png" },
+  "9": { name: "Copa America", logo: "https://media.api-sports.io/football/leagues/9.png" },
+  "6": { name: "AFC Asian Cup", logo: "https://media.api-sports.io/football/leagues/6.png" },
+  "5": { name: "UEFA Nations League", logo: "https://media.api-sports.io/football/leagues/5.png" },
+  "22": { name: "Olympic Football", logo: "https://media.api-sports.io/football/leagues/22.png" }
+};
+
+export default function InternationalProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [leagueData, setLeagueData] = useState<any>(null);
@@ -42,6 +51,18 @@ export default function LeagueProfile() {
           if (currentSeason?.year) {
              setSelectedSeason(currentSeason.year);
           }
+        } else if (id && INTERNATIONAL_TOURNAMENTS[id]) {
+           // Fallback to local data
+           setLeagueData({
+             name: INTERNATIONAL_TOURNAMENTS[id].name,
+             country: 'International',
+             logo: INTERNATIONAL_TOURNAMENTS[id].logo,
+           });
+           
+           const currentYear = new Date().getFullYear();
+           // FIFA World Cup usually happens every 4 years. For fallback, just try recent years.
+           setAvailableSeasons([{ year: 2026, current: true }, { year: 2024 }, { year: 2022 }]);
+           setSelectedSeason(2024);
         }
 
         const follows = await getFollows(null);
@@ -138,8 +159,17 @@ export default function LeagueProfile() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-       <div className="glass-panel p-8 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between mb-8 overflow-hidden relative gap-4">
-          <div className="absolute right-0 top-0 w-64 h-64 bg-accent-blue/10 blur-3xl rounded-full"></div>
+       <div className="mb-6">
+          <button 
+             onClick={() => navigate('/international')}
+             className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm font-medium"
+          >
+             <ArrowLeft className="w-4 h-4" />
+             Back to Tournaments
+          </button>
+       </div>
+       <div className="glass-panel p-8 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between mb-8 overflow-hidden relative gap-4 border-accent-green/20 box-shadow-[0_0_20px_rgba(0,255,135,0.1)]">
+          <div className="absolute right-0 top-0 w-64 h-64 bg-accent-green/10 blur-3xl rounded-full"></div>
           
           <div className="relative z-10 flex items-center gap-6">
               <img src={leagueData.logo} className="w-20 h-20 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]" alt={leagueData.name} />
@@ -151,7 +181,7 @@ export default function LeagueProfile() {
                      <select
                        value={selectedSeason || ''}
                        onChange={(e) => setSelectedSeason(Number(e.target.value))}
-                       className="w-full appearance-none bg-white/5 border border-white/20 text-white text-sm font-bold py-1.5 pl-3 pr-8 rounded-lg outline-none focus:border-accent-blue/50 cursor-pointer"
+                       className="w-full appearance-none bg-white/5 border border-white/20 text-white text-sm font-bold py-1.5 pl-3 pr-8 rounded-lg outline-none focus:border-accent-green/50 cursor-pointer"
                        disabled={loadingSeasonData}
                      >
                        {availableSeasons.map((season) => (
@@ -167,14 +197,9 @@ export default function LeagueProfile() {
           </div>
           
           <div className="relative z-10 flex items-center gap-2">
-            <button onClick={toggleFollow} className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all border ${following ? 'bg-accent-blue/10 text-accent-blue border-accent-blue' : 'bg-white/5 border-white/20 hover:border-accent-blue/50'}`}>
+            <button onClick={toggleFollow} className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all border ${following ? 'bg-accent-green/10 text-accent-green border-accent-green' : 'bg-white/5 border-white/20 hover:border-accent-green/50'}`}>
                {following ? <><CheckCircle className="w-4 h-4" /> Following</> : <><PlusCircle className="w-4 h-4" /> Follow</>}
             </button>
-            {following && (
-               <button className="p-2 rounded-full bg-white/5 border border-white/20 hover:text-accent-blue hover:border-accent-blue/50 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-               </button>
-            )}
           </div>
        </div>
 
@@ -183,7 +208,7 @@ export default function LeagueProfile() {
           
           {loadingSeasonData ? (
              <div className="p-12 text-center glass-panel border border-white/5 rounded-2xl">
-                 <div className="w-8 h-8 border-2 border-accent-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                 <div className="w-8 h-8 border-2 border-accent-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                  <p className="text-zinc-500 text-sm">Loading season data...</p>
              </div>
           ) : standings.length === 0 ? (
@@ -195,7 +220,7 @@ export default function LeagueProfile() {
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                {standings.map((groupMatches, idx) => (
                   <div key={idx} className="glass-panel p-4 md:p-6 rounded-2xl overflow-x-auto">
-                     <h4 className="font-bold text-sm text-accent-blue mb-4 uppercase tracking-widest">{groupMatches[0]?.group || 'League Table'}</h4>
+                     <h4 className="font-bold text-sm text-accent-green mb-4 uppercase tracking-widest">{groupMatches[0]?.group || 'League Table'}</h4>
                      <table className="w-full text-xs text-left">
                         <thead className="text-zinc-500 border-b border-white/10 uppercase tracking-wider">
                            <tr>
@@ -215,7 +240,7 @@ export default function LeagueProfile() {
                            {Array.isArray(groupMatches) && groupMatches.map((teamData: any) => (
                               <tr key={teamData?.team?.id || Math.random()} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                                  <td className="py-3 text-center">{teamData?.rank || '-'}</td>
-                                 <td className="py-3 pl-2 flex items-center gap-2 max-w-[120px] md:max-w-none">
+                                 <td className="py-3 pl-2 flex items-center gap-2 max-w-[120px] md:max-w-none hover:text-accent-green cursor-pointer" onClick={() => teamData?.team?.id && navigate(`/team/${teamData.team.id}`)}>
                                     <img src={teamData?.team?.logo || ''} className="w-5 h-5 object-contain drop-shadow-md bg-white/5 p-0.5 rounded" alt={teamData?.team?.name || 'Team'} />
                                     <span className="font-bold truncate">{teamData?.team?.name || 'Unknown Team'}</span>
                                  </td>
@@ -226,7 +251,7 @@ export default function LeagueProfile() {
                                  <td className="py-3 text-center text-zinc-400 hidden sm:table-cell">{teamData?.all?.goals?.for ?? '-'}</td>
                                  <td className="py-3 text-center text-zinc-400 hidden sm:table-cell">{teamData?.all?.goals?.against ?? '-'}</td>
                                  <td className="py-3 text-center text-zinc-400">{teamData?.goalsDiff ?? '-'}</td>
-                                 <td className="py-3 text-center font-bold px-2">{teamData?.points ?? '-'}</td>
+                                 <td className="py-3 text-center font-bold px-2 text-accent-green">{teamData?.points ?? '-'}</td>
                               </tr>
                            ))}
                         </tbody>
@@ -241,33 +266,33 @@ export default function LeagueProfile() {
           <h3 className="text-lg font-bold">Matches & Schedule</h3>
           {loadingSeasonData ? (
              <div className="p-12 text-center glass-panel border border-white/5 rounded-2xl">
-                 <div className="w-8 h-8 border-2 border-accent-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                 <p className="text-zinc-500 text-sm">Loading season data...</p>
+                 <div className="w-8 h-8 border-2 border-accent-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                 <p className="text-zinc-500 text-sm">Loading tournament fixtures...</p>
              </div>
           ) : fixtures.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               {fixtures.slice().reverse().slice(0, 20).map(match => (
+               {Array.isArray(fixtures) && fixtures.slice().reverse().slice(0, 20).map(match => (
                   <div 
-                    key={match.fixture.id} 
-                    onClick={() => navigate(`/match/${match.fixture.id}`)}
-                    className="glass-panel p-4 rounded-xl flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer"
+                    key={match?.fixture?.id || Math.random()} 
+                    onClick={() => match?.fixture?.id && navigate(`/match/${match.fixture.id}`)}
+                    className="glass-panel p-4 rounded-xl flex items-center justify-between hover:bg-white/5 hover:border-white/20 transition-all cursor-pointer"
                   >
                      <div className="flex flex-col gap-1 w-[25%]">
-                        <span className="text-[10px] text-zinc-500 uppercase tracking-widest">{format(new Date(match.fixture.date), 'MMM d, HH:mm')}</span>
-                        <span className="text-xs font-bold text-accent-blue">{match.fixture.status.short}</span>
+                        <span className="text-[10px] text-zinc-500 uppercase tracking-widest">{match?.fixture?.date ? format(new Date(match.fixture.date), 'MMM d, HH:mm') : '-'}</span>
+                        <span className={`text-xs font-bold ${match?.fixture?.status?.short === 'FT' ? 'text-zinc-400' : 'text-accent-green'}`}>{match?.fixture?.status?.short || '-'}</span>
                      </div>
                      
                      <div className="flex items-center gap-4 flex-1 justify-center">
                         <div className="flex flex-col items-center gap-1 w-1/3">
-                           <img src={match.teams.home.logo} className="w-8 h-8 object-contain" />
-                           <span className="text-[10px] font-bold truncate w-full text-center">{match.teams.home.name}</span>
+                           <img src={match?.teams?.home?.logo || ''} className="w-8 h-8 object-contain" />
+                           <span className="text-[10px] font-bold truncate w-full text-center">{match?.teams?.home?.name || 'Team'}</span>
                         </div>
                         <div className="text-lg font-black italic tracking-tighter w-12 text-center text-white/90">
-                           {match.goals.home ?? '-'} <span className="opacity-50 font-sans mx-0.5">-</span> {match.goals.away ?? '-'}
+                           {match?.goals?.home ?? '-'} <span className="opacity-50 font-sans mx-0.5">-</span> {match?.goals?.away ?? '-'}
                         </div>
                         <div className="flex flex-col items-center gap-1 w-1/3">
-                           <img src={match.teams.away.logo} className="w-8 h-8 object-contain" />
-                           <span className="text-[10px] font-bold truncate w-full text-center">{match.teams.away.name}</span>
+                           <img src={match?.teams?.away?.logo || ''} className="w-8 h-8 object-contain" />
+                           <span className="text-[10px] font-bold truncate w-full text-center">{match?.teams?.away?.name || 'Team'}</span>
                         </div>
                      </div>
                   </div>
@@ -275,7 +300,7 @@ export default function LeagueProfile() {
             </div>
           ) : (
             <div className="p-8 text-center glass-panel border border-white/5 rounded-2xl">
-               <p className="text-zinc-500 text-sm">No official fixtures available currently.</p>
+               <p className="text-zinc-500 text-sm">No official tournament fixtures available currently.</p>
             </div>
           )}
        </div>

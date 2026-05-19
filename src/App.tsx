@@ -17,6 +17,8 @@ import { Bell, X } from 'lucide-react';
 
 import { getStatus } from './lib/api';
 
+import InternationalProfile from './pages/InternationalProfile';
+
 export default function App() {
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
   const [apiUnavailable, setApiUnavailable] = useState(false);
@@ -100,6 +102,7 @@ export default function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/team/:id" element={<TeamProfile />} />
           <Route path="/league/:id" element={<LeagueProfile />} />
+          <Route path="/international/:id" element={<InternationalProfile />} />
           <Route path="/match/:id" element={<MatchProfile />} />
         </Routes>
       </main>
