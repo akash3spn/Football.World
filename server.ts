@@ -239,19 +239,8 @@ const tryFallbackApi = async (url: string, originalErrorData: any) => {
    const tsdbBase = 'https://www.thesportsdb.com/api/v1/json/3';
    try {
      if (url.includes('live=all')) {
-        // Fallback live matches to keep UI active without API limits
-        const fallbackLive = [
-          {
-            fixture: { id: 999991, date: new Date().toISOString(), status: { elapsed: 24, short: '1H' } },
-            league: { name: "Demo League", logo: "https://media.api-sports.io/football/leagues/39.png" },
-            teams: {
-              home: { name: "Home FC", logo: "https://media.api-sports.io/football/teams/33.png" },
-              away: { name: "Away United", logo: "https://media.api-sports.io/football/teams/34.png" }
-            },
-            goals: { home: 1, away: 0 }
-          }
-        ];
-        return { response: fallbackLive, fallback: true };
+        // Just return empty array for live on fallback
+        return { response: [], fallback: true };
      } else if (url.includes('fixtures?date=') || url.includes('next=')) {
         // Map today's events if date matches
         const dateMatch = url.match(/date=([^&]+)/);
@@ -500,29 +489,51 @@ app.get('/api/standings', async (req, res) => {
   }
 });
 
+let cachedNews: any = null;
+let lastNewsFetchTime: number = 0;
+
 app.get('/api/news', async (req, res) => {
-   // A mock news endpoint for now since API-Football doesn't have a news endpoint.
-   // We will return a few static recent news placeholders but we could scrape or use another Free API like NewsAPI.
-   res.json({
-     articles: [
-        {
-           id: "1",
-           headline: "Official: Unveiling the New Football Schedule",
-           imageUrl: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=600&auto=format&fit=crop",
-           publishedAt: new Date().toISOString(),
-           source: "UEFA",
-           url: "#"
-        },
-        {
-           id: "2",
-           headline: "Champions League Updates: High stakes in the upcoming matches",
-           imageUrl: "https://images.unsplash.com/photo-1551280857-2b9ebf2629e8?q=80&w=600&auto=format&fit=crop",
-           publishedAt: new Date(Date.now() - 3600000).toISOString(),
-           source: "Sky Sports",
-           url: "#"
-        }
-     ]
-   });
+  try {
+     const ONE_HOUR = 60 * 60 * 1000;
+     if (cachedNews && (Date.now() - lastNewsFetchTime < ONE_HOUR)) {
+        return res.json({ articles: cachedNews });
+     }
+     
+     // Fetch from BBC Football via RSS2JSON
+     const response = await fetch('https://api.rss2json.com/v1/api.json?rss_url=http://feeds.bbci.co.uk/sport/football/rss.xml');
+     const data = await response.json();
+     
+     if (data && data.items && data.items.length > 0) {
+        cachedNews = data.items.map((item: any, i: number) => ({
+           id: String(i),
+           headline: item.title,
+           imageUrl: item.thumbnail || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=600&auto=format&fit=crop",
+           publishedAt: item.pubDate,
+           source: "BBC Sport",
+           url: item.link
+        }));
+        lastNewsFetchTime = Date.now();
+        return res.json({ articles: cachedNews });
+     } else {
+        // Fallback
+        if (cachedNews) return res.json({ articles: cachedNews });
+        res.json({
+           articles: [
+              {
+                 id: "1",
+                 headline: "Live Football Updates Available Soon",
+                 imageUrl: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=600&auto=format&fit=crop",
+                 publishedAt: new Date().toISOString(),
+                 source: "Football.World",
+                 url: "#"
+              }
+           ]
+        });
+     }
+  } catch(e) {
+     if (cachedNews) return res.json({ articles: cachedNews });
+     res.status(500).json({ error: 'Failed to fetch news' });
+  }
 });
 
 app.get('/sitemap.xml', (req, res) => {

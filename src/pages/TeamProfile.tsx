@@ -72,11 +72,11 @@ export default function TeamProfile() {
   }
 
   if (loading) {
-    return <div className="max-w-4xl mx-auto p-4"><div className="h-64 flex items-center justify-center text-zinc-500 text-sm glass-panel rounded-2xl">Loading official football data...</div></div>;
+    return <div className="max-w-4xl mx-auto p-4"><div className="h-64 flex items-center justify-center text-zinc-500 dark:text-zinc-400 text-sm glass-panel rounded-2xl">Loading official football data...</div></div>;
   }
 
   if (!teamObj) {
-     return <div className="p-8 text-center glass-panel text-sm text-zinc-500 flex items-center justify-center h-64">No official information available currently.</div>;
+     return <div className="p-8 text-center glass-panel text-sm text-zinc-500 dark:text-zinc-400 flex items-center justify-center h-64">No official information available currently.</div>;
   }
 
   const { team, venue } = teamObj;
@@ -93,13 +93,13 @@ export default function TeamProfile() {
               </div>
               <div>
                  <h1 className="text-3xl font-black">{team.name}</h1>
-                 <p className="font-mono text-zinc-400 text-sm">{team.country} • Est. {team.founded}</p>
+                 <p className="font-mono text-zinc-600 dark:text-zinc-400 text-sm">{team.country} • Est. {team.founded}</p>
                  <div className="mt-3 flex items-center gap-2">
-                   <button onClick={toggleFollow} className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${following ? 'bg-accent-blue/10 text-accent-blue border-accent-blue' : 'bg-white/5 border-white/20 hover:border-accent-blue/50'}`}>
+                   <button onClick={toggleFollow} className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${following ? 'bg-accent-blue/10 text-accent-blue border-accent-blue' : 'bg-black/5 dark:bg-white/5 border-black/20 dark:border-white/20 hover:border-accent-blue/50'}`}>
                       {following ? <><CheckCircle className="w-4 h-4" /> Following</> : <><PlusCircle className="w-4 h-4" /> Follow</>}
                    </button>
                    {following && (
-                      <button className="p-1.5 rounded-full bg-white/5 border border-white/20 hover:text-accent-blue hover:border-accent-blue/50 transition-colors">
+                      <button className="p-1.5 rounded-full bg-black/5 dark:bg-white/5 border border-black/20 dark:border-white/20 hover:text-accent-blue hover:border-accent-blue/50 transition-colors">
                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
                       </button>
                    )}
@@ -110,35 +110,35 @@ export default function TeamProfile() {
 
        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <section className="glass-panel p-6 rounded-2xl space-y-4">
-             <h3 className="flex items-center gap-2 font-bold uppercase tracking-widest text-zinc-500 text-sm"><Info className="w-5 h-5"/> Venue & Info</h3>
+             <h3 className="flex items-center gap-2 font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 text-sm"><Info className="w-5 h-5"/> Venue & Info</h3>
              <div className="flex flex-col gap-2 font-mono text-sm">
-                <p><span className="text-zinc-500">Stadium:</span> {venue.name}</p>
-                <p><span className="text-zinc-500">City:</span> {venue.city}</p>
-                <p><span className="text-zinc-500">Capacity:</span> {venue.capacity}</p>
+                <p><span className="text-zinc-500 dark:text-zinc-400">Stadium:</span> {venue.name}</p>
+                <p><span className="text-zinc-500 dark:text-zinc-400">City:</span> {venue.city}</p>
+                <p><span className="text-zinc-500 dark:text-zinc-400">Capacity:</span> {venue.capacity}</p>
              </div>
           </section>
 
           <section className="glass-panel p-6 rounded-2xl space-y-4">
-             <h3 className="flex items-center gap-2 font-bold uppercase tracking-widest text-zinc-500 text-sm"><Users className="w-5 h-5"/> Coach & Squad</h3>
+             <h3 className="flex items-center gap-2 font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 text-sm"><Users className="w-5 h-5"/> Coach & Squad</h3>
              {coach || squad.length > 0 ? (
                 <div className="space-y-4">
                    {coach && (
-                      <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5 pb-3">
-                         <img src={coach.photo} className="w-10 h-10 rounded-full object-cover border border-white/10" alt={coach.name} />
+                      <div className="flex items-center gap-3 p-3 bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 pb-3">
+                         <img src={coach.photo} className="w-10 h-10 rounded-full object-cover border border-black/10 dark:border-white/10" alt={coach.name} />
                          <div>
                             <h4 className="font-bold text-sm w-full truncate">{coach.name}</h4>
-                            <p className="text-[10px] text-zinc-400 uppercase tracking-widest">Manager</p>
+                            <p className="text-[10px] text-zinc-600 dark:text-zinc-400 uppercase tracking-widest">Manager</p>
                          </div>
                       </div>
                    )}
                    {squad.length > 0 && (
                       <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-2 hide-scrollbar">
                          {squad.slice(0, 20).map(player => (
-                            <div key={player.id} className="flex items-center gap-2 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                            <div key={player.id} className="flex items-center gap-2 p-2 rounded-lg bg-black/5 dark:bg-white/5 hover:bg-white/10 transition-colors">
                                <img src={player.photo} className="w-8 h-8 rounded-full object-cover" alt={player.name} />
                                <div className="overflow-hidden">
                                   <h4 className="font-bold text-[11px] truncate w-full">{player.name}</h4>
-                                  <p className="text-[9px] text-zinc-500 uppercase tracking-widest">{player.position}</p>
+                                  <p className="text-[9px] text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">{player.position}</p>
                                </div>
                             </div>
                          ))}
@@ -146,29 +146,29 @@ export default function TeamProfile() {
                    )}
                 </div>
              ) : (
-                <div className="flex items-center justify-center h-20 border border-white/5 rounded-xl bg-white/5">
-                   <span className="text-zinc-500 text-xs">Squad information temporarily unavailable.</span>
+                <div className="flex items-center justify-center h-20 border border-black/5 dark:border-white/5 rounded-xl bg-black/5 dark:bg-white/5">
+                   <span className="text-zinc-500 dark:text-zinc-400 text-xs">Squad information temporarily unavailable.</span>
                 </div>
              )}
           </section>
 
           <section className="glass-panel p-6 rounded-2xl space-y-4">
-             <h3 className="font-bold uppercase tracking-widest text-zinc-500 text-sm border-b border-white/10 pb-2">Upcoming Fixtures</h3>
+             <h3 className="font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 text-sm border-b border-black/10 dark:border-white/10 pb-2">Upcoming Fixtures</h3>
              {fixtures.next?.length > 0 ? (
                 <div className="space-y-2">
                    {fixtures.next.map((match: any) => (
                       <div 
                         key={match.fixture.id} 
                         onClick={() => navigate(`/match/${match.fixture.id}`)}
-                        className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5 cursor-pointer hover:bg-white/10 transition-colors"
+                        className="flex items-center justify-between p-3 rounded-lg bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 cursor-pointer hover:bg-white/10 transition-colors"
                       >
                          <div className="flex flex-col gap-1 w-12 text-center shrink-0">
-                            <span className="text-[10px] text-zinc-500 font-bold uppercase">{format(new Date(match.fixture.date), 'MMM d')}</span>
-                            <span className="text-[11px] text-zinc-400">{format(new Date(match.fixture.date), 'HH:mm')}</span>
+                            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold uppercase">{format(new Date(match.fixture.date), 'MMM d')}</span>
+                            <span className="text-[11px] text-zinc-600 dark:text-zinc-400">{format(new Date(match.fixture.date), 'HH:mm')}</span>
                          </div>
                          <div className="flex items-center gap-3 flex-1 justify-center max-w-[200px]">
                             <img src={match.teams.home.logo} className="w-6 h-6 object-contain" alt={match.teams.home.name} />
-                            <span className="text-[10px] text-zinc-500 font-black">vs</span>
+                            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-black">vs</span>
                             <img src={match.teams.away.logo} className="w-6 h-6 object-contain" alt={match.teams.away.name} />
                          </div>
                       </div>
@@ -176,13 +176,13 @@ export default function TeamProfile() {
                 </div>
              ) : (
                 <div className="flex items-center justify-center py-4 text-center">
-                   <span className="text-zinc-500 text-xs">Loading schedule...</span>
+                   <span className="text-zinc-500 dark:text-zinc-400 text-xs">Loading schedule...</span>
                 </div>
              )}
           </section>
 
           <section className="glass-panel p-6 rounded-2xl space-y-4 lg:col-span-1 border-t-0">
-             <h3 className="font-bold uppercase tracking-widest text-zinc-500 text-sm border-b border-white/10 pb-2">Recent Form</h3>
+             <h3 className="font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 text-sm border-b border-black/10 dark:border-white/10 pb-2">Recent Form</h3>
              {fixtures.last?.length > 0 ? (
                 <div className="space-y-2">
                    {fixtures.last.map((match: any) => {
@@ -190,19 +190,19 @@ export default function TeamProfile() {
                       const myScore = isHome ? match.goals.home : match.goals.away;
                       const oppScore = isHome ? match.goals.away : match.goals.home;
                       const result = myScore > oppScore ? 'W' : myScore < oppScore ? 'L' : 'D';
-                      const color = result === 'W' ? 'text-accent-green bg-accent-green/10' : result === 'L' ? 'text-red-500 bg-red-500/10' : 'text-zinc-400 bg-white/10';
+                      const color = result === 'W' ? 'text-accent-green bg-accent-green/10' : result === 'L' ? 'text-red-500 bg-red-500/10' : 'text-zinc-600 dark:text-zinc-400 bg-black/10 dark:bg-white/10';
                       return (
                          <div 
                            key={match.fixture.id} 
                            onClick={() => navigate(`/match/${match.fixture.id}`)}
-                           className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5 cursor-pointer hover:bg-white/10 transition-colors"
+                           className="flex items-center justify-between p-3 rounded-lg bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 cursor-pointer hover:bg-white/10 transition-colors"
                          >
                             <div className={`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-black ${color}`}>
                                {result}
                             </div>
                             <div className="flex items-center gap-3 flex-1 px-4 justify-between">
                                <img src={match.teams.home.logo} className="w-5 h-5 object-contain" />
-                               <span className="text-sm font-black text-white/90">{match.goals.home} - {match.goals.away}</span>
+                               <span className="text-sm font-black text-black/90 dark:text-white/90">{match.goals.home} - {match.goals.away}</span>
                                <img src={match.teams.away.logo} className="w-5 h-5 object-contain" />
                             </div>
                          </div>
@@ -211,7 +211,7 @@ export default function TeamProfile() {
                 </div>
              ) : (
                 <div className="flex items-center justify-center py-4 text-center">
-                   <span className="text-zinc-500 text-xs">Recent match data unavailable.</span>
+                   <span className="text-zinc-500 dark:text-zinc-400 text-xs">Recent match data unavailable.</span>
                 </div>
              )}
           </section>

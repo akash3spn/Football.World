@@ -68,12 +68,12 @@ export default function Live() {
           </span>
         </div>
         <h1 className="text-4xl md:text-6xl font-bold tracking-tighter mb-4 font-sans">LIVE MATCHES</h1>
-        <p className="text-zinc-500 max-w-lg">Official real-world match events. Updates automatically sync via WebSocket.</p>
+        <p className="text-zinc-500 dark:text-zinc-400 max-w-lg">Official real-world match events. Updates automatically sync via WebSocket.</p>
       </div>
 
       {loading ? (
         <div className="flex flex-col gap-4">
-           <span className="text-zinc-500 text-sm text-center">Loading official football data...</span>
+           <span className="text-zinc-500 dark:text-zinc-400 text-sm text-center">Loading official football data...</span>
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1,2,3,4,5,6].map(i => <div key={i} className="h-48 glass-panel animate-pulse rounded-xl" />)}
            </div>
@@ -82,15 +82,15 @@ export default function Live() {
         <div className="flex items-center justify-center py-20 border border-red-500/20 rounded-xl bg-red-500/5 text-center">
             <div className="space-y-4">
               <h3 className="text-xl font-bold text-red-400">API Error</h3>
-              <p className="text-zinc-300">{apiError}</p>
+              <p className="text-zinc-700 dark:text-zinc-300">{apiError}</p>
             </div>
         </div>
       ) : liveFixtures.length === 0 ? (
-        <div className="flex items-center justify-center py-20 border border-white/10 rounded-xl glass-panel text-center">
+        <div className="flex items-center justify-center py-20 border border-black/10 dark:border-white/10 rounded-xl glass-panel text-center">
             <div className="space-y-4">
               <Radio className="w-12 h-12 text-zinc-600 mx-auto" />
               <h3 className="text-xl font-bold">No Live Matches</h3>
-              <p className="text-zinc-500">No live matches currently.</p>
+              <p className="text-zinc-500 dark:text-zinc-400">No live matches currently.</p>
             </div>
         </div>
       ) : (
@@ -101,7 +101,7 @@ export default function Live() {
                initial={{ opacity: 0, scale: 0.95 }}
                animate={{ opacity: 1, scale: 1 }}
                transition={{ delay: i * 0.05 }}
-               className="glass-panel p-5 rounded-xl group hover:border-[#00D1FF]/50 hover:bg-[#00D1FF]/5 transition-all border border-white/5 relative"
+               className="glass-panel p-5 rounded-xl group hover:border-[#00D1FF]/50 hover:bg-[#00D1FF]/5 transition-all border border-black/5 dark:border-white/5 relative"
              >
                 <div className="absolute top-4 right-4 z-10">
                    <button 
@@ -124,13 +124,13 @@ export default function Live() {
                             }
                          }
                       }}
-                      className={`p-2 rounded-full backdrop-blur-md border ${followedMatches.has(String(match.fixture.id)) ? 'bg-[#00FF87]/20 border-[#00FF87]/50 text-[#00FF87]' : 'bg-black/40 border-white/10 text-zinc-400 hover:text-white hover:bg-white/10'} transition-all`}
+                      className={`p-2 rounded-full backdrop-blur-md border ${followedMatches.has(String(match.fixture.id)) ? 'bg-[#00FF87]/20 border-[#00FF87]/50 text-[#00FF87]' : 'bg-black/40 border-black/10 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white hover:bg-white/10'} transition-all`}
                     >
                       {followedMatches.has(String(match.fixture.id)) ? <Bell className="w-4 h-4 fill-current animate-pulse" /> : <BellOff className="w-4 h-4" />}
                    </button>
                 </div>
                 <div className="flex justify-between items-center mb-6 cursor-pointer" onClick={() => navigate(`/match/${match.fixture.id}`)}>
-                  <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest truncate max-w-[80%] pr-10">{match.league.name}</span>
+                  <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-widest truncate max-w-[80%] pr-10">{match.league.name}</span>
                   <span className="text-[#00FF87] text-xs font-mono font-bold live-pulse">{match.fixture.status.elapsed}'</span>
                 </div>
                 
@@ -141,12 +141,12 @@ export default function Live() {
                    </div>
                    
                    <div className="w-1/3 flex flex-col items-center">
-                     <span className="text-4xl font-black italic tracking-tighter shadow-black drop-shadow-xl">{match.goals.home} <span className="opacity-50 text-zinc-500 text-3xl font-sans font-light mx-1">-</span> {match.goals.away}</span>
-                     <div className="mt-4 flex items-center gap-1.5 bg-black/40 px-3 py-1 rounded border border-white/10">
-                        <span className="text-[10px] font-mono text-zinc-400">Possession: </span>
-                        <span className="text-[10px] font-bold text-white">{match.statistics?.[0]?.statistics?.find((s:any) => s.type === 'Ball Possession')?.value || '50%'}</span>
+                     <span className="text-4xl font-black italic tracking-tighter shadow-black drop-shadow-xl">{match.goals.home} <span className="opacity-50 text-zinc-500 dark:text-zinc-400 text-3xl font-sans font-light mx-1">-</span> {match.goals.away}</span>
+                     <div className="mt-4 flex items-center gap-1.5 bg-black/40 px-3 py-1 rounded border border-black/10 dark:border-white/10">
+                        <span className="text-[10px] font-mono text-zinc-600 dark:text-zinc-400">Possession: </span>
+                        <span className="text-[10px] font-bold text-zinc-900 dark:text-white">{match.statistics?.[0]?.statistics?.find((s:any) => s.type === 'Ball Possession')?.value || '50%'}</span>
                         <span className="text-[10px] text-zinc-600">-</span>
-                        <span className="text-[10px] font-bold text-white">{match.statistics?.[1]?.statistics?.find((s:any) => s.type === 'Ball Possession')?.value || '50%'}</span>
+                        <span className="text-[10px] font-bold text-zinc-900 dark:text-white">{match.statistics?.[1]?.statistics?.find((s:any) => s.type === 'Ball Possession')?.value || '50%'}</span>
                      </div>
                    </div>
 

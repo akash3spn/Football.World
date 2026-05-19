@@ -6,7 +6,7 @@ export default function BottomNav() {
   const location = useLocation();
 
   return (
-    <div className="md:hidden fixed bottom-0 w-full glass-panel pb-safe border-t border-white/10 z-50">
+    <div className="md:hidden fixed bottom-0 w-full glass-panel pb-safe border-t border-black/10 dark:border-white/10 z-50">
       <div className="flex justify-around items-center h-16">
         <NavButton to="/" icon={Home} label="Home" current={location.pathname} />
         <NavButton to="/live" icon={Radio} label="Live" current={location.pathname} />
@@ -26,7 +26,7 @@ function NavButton({ to, icon: Icon, label, current }: { to: string, icon: any, 
       to={to} 
       className={cn(
         "flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors",
-        isActive ? "text-accent-blue" : "text-zinc-500 dark:text-zinc-400"
+        isActive ? "text-accent-blue" : "text-zinc-500 dark:text-zinc-400 dark:text-zinc-400"
       )}
     >
       <Icon className={cn("w-6 h-6", isActive && "animate-pulse")} />

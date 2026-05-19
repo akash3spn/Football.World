@@ -26,7 +26,7 @@ export default function Profile() {
          <div className="glass-panel p-6 flex flex-col items-center justify-center text-center mb-8 bg-gradient-to-br from-white/5 to-transparent">
             <Trophy className="w-12 h-12 text-accent-blue mb-4 drop-shadow-[0_0_15px_rgba(0,209,255,0.5)]" />
             <h2 className="text-2xl font-bold font-sans tracking-tight">Your Followed Teams</h2>
-            <p className="text-zinc-400 text-sm mt-2 max-w-sm">
+            <p className="text-zinc-600 dark:text-zinc-400 text-sm mt-2 max-w-sm">
                Matches for teams you follow will appear here. Turn on notifications to receive live match alerts without needing an account.
             </p>
          </div>
@@ -43,7 +43,7 @@ export default function Profile() {
 
          {follows.length === 0 ? (
             <div className="p-8 text-center glass-panel">
-               <p className="text-zinc-500">You are not following any teams or leagues yet.</p>
+               <p className="text-zinc-500 dark:text-zinc-400">You are not following any teams or leagues yet.</p>
             </div>
          ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -53,12 +53,12 @@ export default function Profile() {
                          <img src={f.entityLogo} className="w-10 h-10 object-contain drop-shadow-md" />
                          <div>
                             <h4 className="font-semibold text-sm truncate max-w-[120px]">{f.entityName}</h4>
-                            <p className="text-[10px] uppercase text-zinc-500 tracking-wider">{f.entityType}</p>
+                            <p className="text-[10px] uppercase text-zinc-500 dark:text-zinc-400 tracking-wider">{f.entityType}</p>
                          </div>
                       </div>
                       <button 
                          onClick={() => handleUnfollow(f.entityId, f.entityType)}
-                         className="text-[10px] text-zinc-500 hover:text-red-500 uppercase font-bold tracking-widest px-2 py-1 rounded bg-black/20 transition-colors"
+                         className="text-[10px] text-zinc-500 dark:text-zinc-400 hover:text-red-500 uppercase font-bold tracking-widest px-2 py-1 rounded bg-black/20 transition-colors"
                       >
                          Unfollow
                       </button>

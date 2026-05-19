@@ -21,6 +21,10 @@ html.dark {
   color-scheme: dark;
 }
 
+html.light {
+  color-scheme: light;
+}
+
 html {
   -webkit-tap-highlight-color: transparent;
   scroll-behavior: smooth;
@@ -28,16 +32,26 @@ html {
 
 body {
   @apply transition-colors duration-300;
-  background-color: var(--color-primary-dark);
-  color: #ffffff;
+  background-color: #f7f7f9;
+  color: #111111;
   font-family: var(--font-sans);
 }
 
+html.dark body {
+  background-color: var(--color-primary-dark);
+  color: #ffffff;
+}
+
 .glass-panel {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(0, 0, 0, 0.03);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 12px;
+}
+
+html.dark .glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* Animations */

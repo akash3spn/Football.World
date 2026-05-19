@@ -35,6 +35,15 @@ export default function Home() {
       }
     });
 
+    const initNews = async () => {
+      try {
+        const n = await getNews();
+        if (n?.articles) setNews(n.articles);
+      } catch (e) {
+        console.error("Failed to fetch news update");
+      }
+    };
+
     const init = async () => {
       try {
         const [live, up, n] = await Promise.all([
@@ -57,7 +66,10 @@ export default function Home() {
     };
     init();
 
+    const newsInterval = setInterval(initNews, 3600000); // 1 hour
+
     return () => {
+      clearInterval(newsInterval);
       socket.off('live_updates');
       socket.off('upcoming_updates');
       socket.disconnect();
@@ -88,15 +100,15 @@ export default function Home() {
 
           {loading ? (
             <div className="h-48 glass-panel rounded-2xl flex items-center justify-center animate-pulse">
-               <span className="text-zinc-500 text-sm">Loading official football data...</span>
+               <span className="text-zinc-500 dark:text-zinc-400 text-sm">Loading official football data...</span>
             </div>
           ) : apiError ? (
             <div className="h-32 flex items-center justify-center border border-red-500/20 rounded-2xl bg-red-500/5">
                <p className="text-red-400 text-sm font-bold">{apiError}</p>
             </div>
           ) : liveFixtures.length === 0 ? (
-            <div className="h-32 flex items-center justify-center border border-white/5 rounded-2xl bg-white/5">
-               <p className="text-zinc-500 text-sm">No live matches currently.</p>
+            <div className="h-32 flex items-center justify-center border border-black/5 dark:border-white/5 rounded-2xl bg-black/5 dark:bg-white/5">
+               <p className="text-zinc-500 dark:text-zinc-400 text-sm">No live matches currently.</p>
             </div>
           ) : (
             <div className="flex gap-4 overflow-x-auto pb-4 snap-x hide-scrollbar relative z-10">
@@ -119,7 +131,7 @@ export default function Home() {
           <div className="space-y-3 overflow-y-auto hide-scrollbar flex-1">
             {loading ? (
                <div className="flex flex-col gap-3 py-4">
-                  <span className="text-zinc-500 text-sm text-center">Loading official football data...</span>
+                  <span className="text-zinc-500 dark:text-zinc-400 text-sm text-center">Loading official football data...</span>
                   {[1,2,3,4].map(i => <div key={i} className="h-20 glass-panel rounded-xl animate-pulse"></div>)}
                </div>
             ) : apiError ? (
@@ -127,8 +139,8 @@ export default function Home() {
                  <p className="text-red-400 text-sm font-bold">{apiError}</p>
                </div>
             ) : upcoming.length === 0 ? (
-               <div className="p-6 text-center border border-white/5 rounded-xl bg-white/5">
-                 <p className="text-zinc-500 text-sm">Official football information currently unavailable.</p>
+               <div className="p-6 text-center border border-black/5 dark:border-white/5 rounded-xl bg-black/5 dark:bg-white/5">
+                 <p className="text-zinc-500 dark:text-zinc-400 text-sm">Official football information currently unavailable.</p>
                </div>
             ) : upcoming.slice(0, 15).map((match, i) => (
                <FixtureRow key={i} match={match} onClick={() => navigate(`/match/${match.fixture.id}`)} />
@@ -141,11 +153,13 @@ export default function Home() {
       <aside className="w-full lg:w-80 flex flex-col gap-6">
         {/* Live News */}
         <section className="glass-panel p-5 rounded-2xl flex-1 max-h-[600px] overflow-y-auto hide-scrollbar">
-          <h2 className="text-sm font-bold uppercase tracking-widest text-white/40 mb-5">Global News Feed</h2>
+          <h2 className="text-sm font-bold uppercase tracking-widest text-black/40 dark:text-white/40 mb-5">Global News Feed</h2>
           <div className="space-y-5">
             {news.map((article, i) => (
               <motion.a 
                 href={article.url}
+                target="_blank"
+                rel="noopener noreferrer"
                 key={i} 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -159,7 +173,7 @@ export default function Home() {
             ))}
             
             {!loading && news.length === 0 && (
-               <p className="text-zinc-500 text-xs">News feed unavailable.</p>
+               <p className="text-zinc-500 dark:text-zinc-400 text-xs">News feed unavailable.</p>
             )}
           </div>
         </section>
@@ -167,32 +181,32 @@ export default function Home() {
         {/* Quick Links & Competitions */}
         <section className="glass-panel p-5 rounded-2xl space-y-6">
            <div>
-             <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4">Top Leagues</h3>
+             <h3 className="text-xs font-bold uppercase tracking-widest text-black/40 dark:text-white/40 mb-4">Top Leagues</h3>
              <div className="grid grid-cols-2 gap-2 text-xs font-medium">
-               <Link to="/league/39" className="p-2 rounded bg-white/5 hover:bg-white/10 hover:text-accent-blue transition-colors flex items-center gap-2"><img src="https://media.api-sports.io/football/leagues/39.png" className="w-4 h-4 object-contain" /> Premier League</Link>
-               <Link to="/league/140" className="p-2 rounded bg-white/5 hover:bg-white/10 hover:text-accent-blue transition-colors flex items-center gap-2"><img src="https://media.api-sports.io/football/leagues/140.png" className="w-4 h-4 object-contain" /> La Liga</Link>
-               <Link to="/league/135" className="p-2 rounded bg-white/5 hover:bg-white/10 hover:text-accent-blue transition-colors flex items-center gap-2"><img src="https://media.api-sports.io/football/leagues/135.png" className="w-4 h-4 object-contain" /> Serie A</Link>
-               <Link to="/league/2" className="p-2 rounded bg-white/5 hover:bg-white/10 hover:text-accent-blue transition-colors flex items-center gap-2"><img src="https://media.api-sports.io/football/leagues/2.png" className="w-4 h-4 object-contain grayscale" /> UCL</Link>
+               <Link to="/league/39" className="p-2 rounded bg-black/5 dark:bg-white/5 hover:bg-white/10 hover:text-accent-blue transition-colors flex items-center gap-2"><img src="https://media.api-sports.io/football/leagues/39.png" className="w-4 h-4 object-contain" /> Premier League</Link>
+               <Link to="/league/140" className="p-2 rounded bg-black/5 dark:bg-white/5 hover:bg-white/10 hover:text-accent-blue transition-colors flex items-center gap-2"><img src="https://media.api-sports.io/football/leagues/140.png" className="w-4 h-4 object-contain" /> La Liga</Link>
+               <Link to="/league/135" className="p-2 rounded bg-black/5 dark:bg-white/5 hover:bg-white/10 hover:text-accent-blue transition-colors flex items-center gap-2"><img src="https://media.api-sports.io/football/leagues/135.png" className="w-4 h-4 object-contain" /> Serie A</Link>
+               <Link to="/league/2" className="p-2 rounded bg-black/5 dark:bg-white/5 hover:bg-white/10 hover:text-accent-blue transition-colors flex items-center gap-2"><img src="https://media.api-sports.io/football/leagues/2.png" className="w-4 h-4 object-contain grayscale" /> UCL</Link>
              </div>
            </div>
 
            <div>
-             <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4">International</h3>
+             <h3 className="text-xs font-bold uppercase tracking-widest text-black/40 dark:text-white/40 mb-4">International</h3>
              <div className="flex flex-col gap-2 text-sm font-medium">
-               <Link to="/league/1" className="p-3 rounded bg-white/5 border-l-2 border-l-accent-green hover:bg-white/10 transition-colors flex items-center justify-between cursor-pointer">
+               <Link to="/league/1" className="p-3 rounded bg-black/5 dark:bg-white/5 border-l-2 border-l-accent-green hover:bg-white/10 transition-colors flex items-center justify-between cursor-pointer">
                   <span>FIFA World Cup</span>
                   <span className="text-[10px] text-accent-green bg-accent-green/10 px-2 py-0.5 rounded">Verified</span>
                </Link>
-               <Link to="/league/4" className="p-3 rounded bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-between cursor-pointer">
+               <Link to="/league/4" className="p-3 rounded bg-black/5 dark:bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-between cursor-pointer">
                   <span>UEFA Euro</span>
                </Link>
-               <Link to="/league/9" className="p-3 rounded bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-between cursor-pointer">
+               <Link to="/league/9" className="p-3 rounded bg-black/5 dark:bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-between cursor-pointer">
                   <span>Copa America</span>
                </Link>
              </div>
            </div>
            
-           <div className="pt-4 border-t border-white/10 flex flex-col gap-2 text-sm font-medium">
+           <div className="pt-4 border-t border-black/10 dark:border-white/10 flex flex-col gap-2 text-sm font-medium">
              <Link to="/search" className="hover:text-accent-blue transition-colors">Search Teams & Players</Link>
              <Link to="/profile" className="hover:text-accent-blue transition-colors">My Followed Teams</Link>
            </div>
@@ -205,9 +219,9 @@ export default function Home() {
 
 function LiveCard({ match }: { match: any, key?: React.Key }) {
   return (
-    <div className="min-w-[280px] sm:min-w-[300px] snap-center bg-white/5 border border-white/5 p-4 rounded-xl relative overflow-hidden group hover:border-accent-blue/50 transition-colors cursor-pointer">
+    <div className="min-w-[280px] sm:min-w-[300px] snap-center bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 p-4 rounded-xl relative overflow-hidden group hover:border-accent-blue/50 transition-colors cursor-pointer">
       <div className="flex justify-between items-center mb-4 relative z-10">
-        <span className="text-[10px] uppercase tracking-wider font-bold text-zinc-400 truncate max-w-[150px]">
+        <span className="text-[10px] uppercase tracking-wider font-bold text-zinc-600 dark:text-zinc-400 truncate max-w-[150px]">
           {match.league?.name || 'Friendly'}
         </span>
         <div className="flex items-center gap-2">
@@ -252,7 +266,7 @@ function FixtureRow({ match, onClick }: { match: any, onClick: () => void, key?:
           <span className="text-sm font-semibold truncate max-w-[80px] sm:max-w-none">{match.teams.home.name}</span>
           <img src={match.teams.home.logo} className="w-5 h-5 object-contain drop-shadow-sm" alt="" />
         </div>
-        <span className="text-[10px] font-mono text-zinc-500 bg-white/5 px-2 py-0.5 rounded">VS</span>
+        <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400 bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded">VS</span>
         <div className="flex items-center gap-2 justify-start flex-1">
           <img src={match.teams.away.logo} className="w-5 h-5 object-contain drop-shadow-sm" alt="" />
           <span className="text-sm font-semibold truncate max-w-[80px] sm:max-w-none">{match.teams.away.name}</span>

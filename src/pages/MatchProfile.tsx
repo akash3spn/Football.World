@@ -135,7 +135,7 @@ export default function MatchProfile() {
       <div className="max-w-4xl mx-auto p-4 flex items-center justify-center min-h-[50vh]">
         <div className="flex flex-col items-center gap-4">
           <Activity className="w-8 h-8 text-accent-green animate-pulse" />
-          <span className="text-zinc-400 font-mono text-sm uppercase tracking-widest">Loading Live Match...</span>
+          <span className="text-zinc-600 dark:text-zinc-400 font-mono text-sm uppercase tracking-widest">Loading Live Match...</span>
         </div>
       </div>
     );
@@ -144,7 +144,7 @@ export default function MatchProfile() {
   if (!matchData) {
     return (
       <div className="max-w-4xl mx-auto p-4">
-         <div className="p-8 text-center glass-panel text-sm text-zinc-500 rounded-2xl flex flex-col items-center gap-4 py-16">
+         <div className="p-8 text-center glass-panel text-sm text-zinc-500 dark:text-zinc-400 rounded-2xl flex flex-col items-center gap-4 py-16">
             <AlertCircle className="w-10 h-10 text-zinc-600" />
             No official match information available currently.
          </div>
@@ -161,8 +161,8 @@ export default function MatchProfile() {
     if (type === 'Card' && detail.includes('Yellow')) return <div className="w-2.5 h-3.5 bg-yellow-400 rounded-sm"></div>;
     if (type === 'Card' && detail.includes('Red')) return <div className="w-2.5 h-3.5 bg-red-500 rounded-sm"></div>;
     if (type === 'subst') return <ArrowLeft className="w-3 h-3 text-accent-blue" />; // simplified
-    if (type === 'Var') return <Tv className="w-3 h-3 text-white" />;
-    return <Flag className="w-3 h-3 text-zinc-400" />;
+    if (type === 'Var') return <Tv className="w-3 h-3 text-zinc-900 dark:text-white" />;
+    return <Flag className="w-3 h-3 text-zinc-600 dark:text-zinc-400" />;
   };
 
   return (
@@ -181,7 +181,7 @@ export default function MatchProfile() {
                    <Bell className="w-6 h-6 text-accent-green" />
                 </div>
                 <div className="flex-1 flex flex-col justify-center">
-                   <span className="text-xl font-black italic tracking-tighter text-white uppercase">{goalNotification.message}</span>
+                   <span className="text-xl font-black italic tracking-tighter text-zinc-900 dark:text-white uppercase">{goalNotification.message}</span>
                    <span className="text-xs text-accent-green font-mono uppercase tracking-widest mt-0.5 animate-pulse">Live Update System</span>
                 </div>
                 {goalNotification.teamId === teams.home.id && <img src={teams.home.logo} className="w-10 h-10 object-contain drop-shadow-lg" />}
@@ -192,7 +192,7 @@ export default function MatchProfile() {
        
        <button 
          onClick={() => navigate(-1)}
-         className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm font-medium -mt-2"
+         className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors text-sm font-medium -mt-2"
        >
          <ArrowLeft className="w-4 h-4" />
          Back
@@ -208,7 +208,7 @@ export default function MatchProfile() {
              <div className="flex flex-col items-center mb-6">
                <div 
                  onClick={() => navigate(`/league/${league.id}`)}
-                 className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
+                 className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
                >
                   <img src={league.logo} className="w-5 h-5 object-contain" alt={league.name} />
                   <span className="text-xs font-bold uppercase tracking-widest">{league.name}</span>
@@ -225,29 +225,29 @@ export default function MatchProfile() {
 
                 {/* Score & Status */}
                 <div className="flex flex-col items-center justify-center -mt-4 w-1/3">
-                   <div className={`px-4 py-1 rounded-full border mb-3 text-[10px] md:text-xs uppercase font-extrabold tracking-widest shadow-lg ${isLive ? 'bg-accent-green/10 text-accent-green border-accent-green/50 animate-pulse' : 'bg-white/5 text-zinc-300 border-white/10'}`}>
+                   <div className={`px-4 py-1 rounded-full border mb-3 text-[10px] md:text-xs uppercase font-extrabold tracking-widest shadow-lg ${isLive ? 'bg-accent-green/10 text-accent-green border-accent-green/50 animate-pulse' : 'bg-black/5 dark:bg-white/5 text-zinc-700 dark:text-zinc-300 border-black/10 dark:border-white/10'}`}>
                       {isLive ? `LIVE ${fixture.status.elapsed}'` : fixture.status.long}
                    </div>
                    
                    <div className={`text-4xl md:text-7xl font-black font-mono tracking-tighter drop-shadow-lg flex items-center gap-3 md:gap-6 ${scoreFlash ? 'animate-pulse scale-110 text-accent-green' : 'transition-all duration-500'}`}>
-                      <span className={scoreFlash ? 'text-white' : (goals.home > goals.away ? 'text-white' : (goals.home < goals.away ? 'text-zinc-500' : 'text-white'))}>{goals.home ?? '-'}</span>
-                      <span className={scoreFlash ? 'text-white' : 'text-white/20 font-sans font-light -mt-2'}>-</span>
-                      <span className={scoreFlash ? 'text-white' : (goals.away > goals.home ? 'text-white' : (goals.away < goals.home ? 'text-zinc-500' : 'text-white'))}>{goals.away ?? '-'}</span>
+                      <span className={scoreFlash ? 'text-accent-green' : (goals.home > goals.away ? 'text-zinc-900 dark:text-white' : (goals.home < goals.away ? 'text-zinc-500 dark:text-zinc-400' : 'text-zinc-900 dark:text-white'))}>{goals.home ?? '-'}</span>
+                      <span className={scoreFlash ? 'text-accent-green' : 'text-black/20 dark:text-white/20 font-sans font-light -mt-2'}>-</span>
+                      <span className={scoreFlash ? 'text-accent-green' : (goals.away > goals.home ? 'text-zinc-900 dark:text-white' : (goals.away < goals.home ? 'text-zinc-500 dark:text-zinc-400' : 'text-zinc-900 dark:text-white'))}>{goals.away ?? '-'}</span>
                    </div>
                    
                    {/* Match Progress Bar */}
                    {isLive && fixture.status.elapsed && (
                       <div className="w-full max-w-[120px] mt-4 flex flex-col items-center gap-1">
-                         <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                         <div className="w-full h-1 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
                             <div className="h-full bg-accent-green rounded-full" style={{ width: `${Math.min(100, (fixture.status.elapsed / 90) * 100)}%` }}></div>
                          </div>
-                         <span className="text-[10px] text-zinc-500 font-mono">{90 - fixture.status.elapsed > 0 ? `${90 - fixture.status.elapsed} mins left` : 'Added Time'}</span>
+                         <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono">{90 - fixture.status.elapsed > 0 ? `${90 - fixture.status.elapsed} mins left` : 'Added Time'}</span>
                       </div>
                    )}
                    
                    {/* ET or Pens if applicable */}
                    {score?.penalty?.home !== null && (
-                      <div className="text-xs text-zinc-400 mt-2 font-mono">
+                      <div className="text-xs text-zinc-600 dark:text-zinc-400 mt-2 font-mono">
                          Pens: {score.penalty.home} - {score.penalty.away}
                       </div>
                    )}
@@ -262,20 +262,20 @@ export default function MatchProfile() {
              </div>
              
              {/* Match Meta (Stadium/Ref) */}
-             <div className="flex items-center gap-4 mt-8 pt-6 border-t border-white/5 w-full justify-center flex-wrap">
+             <div className="flex items-center gap-4 mt-8 pt-6 border-t border-black/5 dark:border-white/5 w-full justify-center flex-wrap">
                 {fixture.venue?.name && (
-                   <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-mono">
+                   <div className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400 font-mono">
                       <MapPin className="w-3.5 h-3.5" />
                       <span>{fixture.venue.name}, {fixture.venue.city}</span>
                    </div>
                 )}
                 {fixture.referee && (
-                   <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-mono">
+                   <div className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400 font-mono">
                       <User className="w-3.5 h-3.5" />
                       <span>Ref: {fixture.referee.split(',')[0]}</span>
                    </div>
                 )}
-                <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-mono">
+                <div className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400 font-mono">
                    <Clock className="w-3.5 h-3.5" />
                    <span>{format(matchDate, 'PPP HH:mm')}</span>
                 </div>
@@ -287,19 +287,19 @@ export default function MatchProfile() {
        {/* GOAL SCORERS SUMMARY */}
        {events.filter(e => e.type === 'Goal').length > 0 && (
          <div className="grid grid-cols-2 gap-4 px-2">
-            <div className="flex flex-col gap-1 items-end pr-4 border-r border-white/10">
+            <div className="flex flex-col gap-1 items-end pr-4 border-r border-black/10 dark:border-white/10">
                {events.filter(e => e.type === 'Goal' && e.team.id === teams.home.id).map((e, i) => (
                   <div key={i} className="text-xs flex flex-col items-end">
-                     <span className="font-bold flex items-center justify-end gap-1"><span className="text-zinc-500 font-mono text-[10px]">{e.time.elapsed}'</span> {e.player.name} {getEventIcon(e.type, e.detail)}</span>
-                     {e.assist?.name && <span className="text-[10px] text-zinc-500">ast: {e.assist.name}</span>}
+                     <span className="font-bold flex items-center justify-end gap-1"><span className="text-zinc-500 dark:text-zinc-400 font-mono text-[10px]">{e.time.elapsed}'</span> {e.player.name} {getEventIcon(e.type, e.detail)}</span>
+                     {e.assist?.name && <span className="text-[10px] text-zinc-500 dark:text-zinc-400">ast: {e.assist.name}</span>}
                   </div>
                ))}
             </div>
             <div className="flex flex-col gap-1 items-start pl-4">
                {events.filter(e => e.type === 'Goal' && e.team.id === teams.away.id).map((e, i) => (
                   <div key={i} className="text-xs flex flex-col items-start">
-                     <span className="font-bold flex items-center justify-start gap-1">{getEventIcon(e.type, e.detail)} {e.player.name} <span className="text-zinc-500 font-mono text-[10px]">{e.time.elapsed}'</span></span>
-                     {e.assist?.name && <span className="text-[10px] text-zinc-500">ast: {e.assist.name}</span>}
+                     <span className="font-bold flex items-center justify-start gap-1">{getEventIcon(e.type, e.detail)} {e.player.name} <span className="text-zinc-500 dark:text-zinc-400 font-mono text-[10px]">{e.time.elapsed}'</span></span>
+                     {e.assist?.name && <span className="text-[10px] text-zinc-500 dark:text-zinc-400">ast: {e.assist.name}</span>}
                   </div>
                ))}
             </div>
@@ -312,7 +312,7 @@ export default function MatchProfile() {
              <button
                key={tab}
                onClick={() => setActiveTab(tab)}
-               className={`px-5 py-2.5 rounded-full text-xs font-bold tracking-widest transition-colors shrink-0 ${activeTab === tab ? 'bg-white text-black' : 'bg-white/5 text-zinc-400 hover:bg-white/10'}`}
+               className={`px-5 py-2.5 rounded-full text-xs font-bold tracking-widest transition-colors shrink-0 ${activeTab === tab ? 'bg-white text-black' : 'bg-black/5 dark:bg-white/5 text-zinc-600 dark:text-zinc-400 hover:bg-white/10'}`}
              >
                {tab}
              </button>
@@ -330,23 +330,23 @@ export default function MatchProfile() {
                       <h3 className="text-sm font-bold uppercase tracking-widest mb-6">Match Events</h3>
                       
                       {!events || events.length === 0 ? (
-                         <div className="text-center py-10 text-zinc-500 text-sm">No events recorded yet.</div>
+                         <div className="text-center py-10 text-zinc-500 dark:text-zinc-400 text-sm">No events recorded yet.</div>
                       ) : (
                          <div className="relative">
-                            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/10 -translate-x-1/2"></div>
+                            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-black/10 dark:bg-white/10 -translate-x-1/2"></div>
                             <div className="space-y-4">
                                {events.map((ev: any, idx: number) => {
                                   const isHome = ev.team.id === teams.home.id;
                                   return (
                                      <div key={idx} className={`flex w-full items-center ${isHome ? 'flex-row' : 'flex-row-reverse'}`}>
                                         <div className={`w-1/2 ${isHome ? 'pr-8 text-right' : 'pl-8 text-left'}`}>
-                                           <div className="bg-white/5 p-3 rounded-xl border border-white/5 inline-block max-w-full">
-                                              <p className="font-bold text-sm text-white">{ev.player.name}</p>
-                                              <p className="text-[10px] uppercase tracking-widest text-zinc-400 mt-1">{ev.type} • {ev.detail}</p>
-                                              {ev.assist?.name && <p className="text-[10px] text-zinc-500 mt-0.5">Assist: {ev.assist.name}</p>}
+                                           <div className="bg-black/5 dark:bg-white/5 p-3 rounded-xl border border-black/5 dark:border-white/5 inline-block max-w-full">
+                                              <p className="font-bold text-sm text-zinc-900 dark:text-white">{ev.player.name}</p>
+                                              <p className="text-[10px] uppercase tracking-widest text-zinc-600 dark:text-zinc-400 mt-1">{ev.type} • {ev.detail}</p>
+                                              {ev.assist?.name && <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">Assist: {ev.assist.name}</p>}
                                            </div>
                                         </div>
-                                        <div className="absolute left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-zinc-900 border border-white/20 flex flex-col items-center justify-center shadow-lg z-10">
+                                        <div className="absolute left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-white dark:bg-zinc-900 border border-black/20 dark:border-white/20 flex flex-col items-center justify-center shadow-lg z-10">
                                            <span className="text-[10px] font-bold font-mono leading-none">{ev.time.elapsed}'</span>
                                         </div>
                                         <div className={`w-1/2 ${isHome ? 'pl-8 text-left' : 'pr-8 text-right'}`}>
@@ -369,12 +369,12 @@ export default function MatchProfile() {
                       <h3 className="text-sm font-bold uppercase tracking-widest mb-6">Team Statistics</h3>
                       
                       {!stats || stats.length < 2 ? (
-                         <div className="text-center py-10 text-zinc-500 text-sm">Statistics unavailable for this match.</div>
+                         <div className="text-center py-10 text-zinc-500 dark:text-zinc-400 text-sm">Statistics unavailable for this match.</div>
                       ) : (
                          <div className="space-y-6">
                             <div className="flex justify-between items-center px-2 mb-4">
                                <img src={stats[0].team.logo} className="w-8 h-8 object-contain" />
-                               <span className="font-mono text-zinc-500 text-xs lowercase">VS</span>
+                               <span className="font-mono text-zinc-500 dark:text-zinc-400 text-xs lowercase">VS</span>
                                <img src={stats[1].team.logo} className="w-8 h-8 object-contain" />
                             </div>
                             
@@ -392,13 +392,39 @@ export default function MatchProfile() {
                                return (
                                   <div key={idx} className="flex flex-col gap-1.5">
                                      <div className="flex justify-between text-xs font-mono">
-                                        <span className="font-bold text-white">{homeVal}</span>
-                                        <span className="text-zinc-500 uppercase tracking-widest">{st.type}</span>
-                                        <span className="font-bold text-white">{awayVal}</span>
+                                        <motion.span 
+                                           key={`home-${homeVal}`}
+                                           initial={{ scale: 1.2, color: '#00ff87' }}
+                                           animate={{ scale: 1, color: '#ffffff' }}
+                                           transition={{ duration: 0.5 }}
+                                           className="font-bold text-zinc-900 dark:text-white inline-block"
+                                        >
+                                           {homeVal}
+                                        </motion.span>
+                                        <span className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">{st.type}</span>
+                                        <motion.span 
+                                           key={`away-${awayVal}`}
+                                           initial={{ scale: 1.2, color: '#00ff87' }}
+                                           animate={{ scale: 1, color: '#ffffff' }}
+                                           transition={{ duration: 0.5 }}
+                                           className="font-bold text-zinc-900 dark:text-white inline-block"
+                                        >
+                                           {awayVal}
+                                        </motion.span>
                                      </div>
-                                     <div className="h-1.5 w-full bg-white/5 rounded-full flex overflow-hidden">
-                                        <div className="h-full bg-white/70" style={{ width: `${homePct}%` }}></div>
-                                        <div className="h-full bg-accent-green/70" style={{ width: `${awayPct}%` }}></div>
+                                     <div className="h-1.5 w-full bg-black/5 dark:bg-white/5 rounded-full flex overflow-hidden">
+                                        <motion.div 
+                                          initial={{ width: `${homePct}%` }} 
+                                          animate={{ width: `${homePct}%` }} 
+                                          transition={{ type: "spring", bounce: 0, duration: 0.8 }} 
+                                          className="h-full bg-black/70 dark:bg-white/70">
+                                        </motion.div>
+                                        <motion.div 
+                                          initial={{ width: `${awayPct}%` }} 
+                                          animate={{ width: `${awayPct}%` }}
+                                          transition={{ type: "spring", bounce: 0, duration: 0.8 }} 
+                                          className="h-full bg-accent-green/70">
+                                        </motion.div>
                                      </div>
                                   </div>
                                )
@@ -415,7 +441,7 @@ export default function MatchProfile() {
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       
                       {!lineups || lineups.length < 2 ? (
-                         <div className="col-span-full glass-panel p-10 text-center text-zinc-500 text-sm rounded-3xl">Lineups not available for this match.</div>
+                         <div className="col-span-full glass-panel p-10 text-center text-zinc-500 dark:text-zinc-400 text-sm rounded-3xl">Lineups not available for this match.</div>
                       ) : (
                          <>
                          {[lineups[0], lineups[1]].map((lineup, i) => (
@@ -424,29 +450,29 @@ export default function MatchProfile() {
                                  <div className="flex items-center gap-3">
                                     <img src={lineup.team.logo} className="w-8 h-8 object-contain" />
                                     <div>
-                                       <h4 className="font-bold text-white text-sm">{lineup.team.name}</h4>
-                                       <p className="text-[10px] text-zinc-500 uppercase tracking-widest">{lineup.formation || 'Formation TBC'}</p>
+                                       <h4 className="font-bold text-zinc-900 dark:text-white text-sm">{lineup.team.name}</h4>
+                                       <p className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">{lineup.formation || 'Formation TBC'}</p>
                                     </div>
                                  </div>
                                  <div className="text-right">
-                                    <h5 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Coach</h5>
-                                    <p className="text-sm text-white">{lineup.coach?.name || 'Unknown'}</p>
+                                    <h5 className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-widest">Coach</h5>
+                                    <p className="text-sm text-zinc-900 dark:text-white">{lineup.coach?.name || 'Unknown'}</p>
                                  </div>
                               </div>
                               
-                              <h5 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3 border-b border-white/10 pb-2">Starting XI</h5>
+                              <h5 className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-3 border-b border-black/10 dark:border-white/10 pb-2">Starting XI</h5>
                               <div className="space-y-2 mb-6">
                                  {lineup.startXI.map((playerObj: any, pIdx: number) => {
                                     const p = playerObj.player;
                                     return (
-                                       <div key={pIdx} className="flex items-center gap-3 p-2 bg-white/5 rounded-lg border border-white/5">
-                                          <div className="w-6 h-6 flex items-center justify-center bg-white/10 rounded font-mono text-[10px] font-bold text-white">
+                                       <div key={pIdx} className="flex items-center gap-3 p-2 bg-black/5 dark:bg-white/5 rounded-lg border border-black/5 dark:border-white/5">
+                                          <div className="w-6 h-6 flex items-center justify-center bg-black/10 dark:bg-white/10 rounded font-mono text-[10px] font-bold text-zinc-900 dark:text-white">
                                              {p.number || '-'}
                                           </div>
                                           <div className="flex-1">
-                                             <div className="text-sm font-bold text-white">{p.name}</div>
+                                             <div className="text-sm font-bold text-zinc-900 dark:text-white">{p.name}</div>
                                           </div>
-                                          <div className="px-2 py-0.5 rounded bg-white/5 text-[10px] text-zinc-400 font-mono">
+                                          <div className="px-2 py-0.5 rounded bg-black/5 dark:bg-white/5 text-[10px] text-zinc-600 dark:text-zinc-400 font-mono">
                                              {p.pos}
                                           </div>
                                        </div>
@@ -454,17 +480,17 @@ export default function MatchProfile() {
                                  })}
                               </div>
 
-                              <h5 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3 border-b border-white/10 pb-2">Substitutes</h5>
+                              <h5 className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-3 border-b border-black/10 dark:border-white/10 pb-2">Substitutes</h5>
                               <div className="space-y-2">
                                  {lineup.substitutes.map((playerObj: any, pIdx: number) => {
                                     const p = playerObj.player;
                                     return (
                                        <div key={pIdx} className="flex items-center gap-3 p-2 bg-transparent rounded-lg">
-                                          <div className="w-6 h-6 flex items-center justify-center text-zinc-500 font-mono text-[10px]">
+                                          <div className="w-6 h-6 flex items-center justify-center text-zinc-500 dark:text-zinc-400 font-mono text-[10px]">
                                              {p.number || '-'}
                                           </div>
                                           <div className="flex-1">
-                                             <div className="text-sm text-zinc-400">{p.name}</div>
+                                             <div className="text-sm text-zinc-600 dark:text-zinc-400">{p.name}</div>
                                           </div>
                                           <div className="text-[10px] text-zinc-600 font-mono">
                                              {p.pos}

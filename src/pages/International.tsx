@@ -38,7 +38,7 @@ export default function International() {
              >
                 <img src={league.logo} className="w-20 h-20 object-contain mb-4 group-hover:scale-110 transition-transform drop-shadow-md" alt={league.name} />
                 <h3 className="font-bold text-sm">{league.name}</h3>
-                <span className="text-[10px] uppercase text-zinc-500 tracking-wider mt-1">{league.country}</span>
+                <span className="text-[10px] uppercase text-zinc-500 dark:text-zinc-400 tracking-wider mt-1">{league.country}</span>
              </motion.div>
          ))}
       </div>

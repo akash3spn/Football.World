@@ -71,10 +71,10 @@ export default function App() {
 
   if (isCheckingApi) {
     return (
-      <div className="min-h-screen bg-[#07090D] flex items-center justify-center">
+      <div className="min-h-screen bg-zinc-50 dark:bg-[#07090D] flex items-center justify-center">
          <div className="flex flex-col items-center">
             <div className="w-12 h-12 border-4 border-[#00D1FF] border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p className="text-zinc-400 font-mono text-sm animate-pulse">Initializing Football.World...</p>
+            <p className="text-zinc-600 dark:text-zinc-400 font-mono text-sm animate-pulse">Initializing Football.World...</p>
          </div>
       </div>
     );
@@ -110,8 +110,8 @@ export default function App() {
       <BottomNav />
 
       {showNotifPrompt && (
-         <div className="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-[350px] bg-primary-dark/95 backdrop-blur-xl border border-accent-blue/50 p-4 rounded-2xl shadow-[0_0_30px_rgba(0,209,255,0.2)] z-50 animate-in slide-in-from-bottom-5">
-            <button onClick={handleDismissPrompt} className="absolute top-3 right-3 text-zinc-400 hover:text-white">
+         <div className="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-[350px] bg-white/95 dark:bg-primary-dark/95 backdrop-blur-xl border border-accent-blue/50 p-4 rounded-2xl shadow-[0_0_30px_rgba(0,209,255,0.2)] z-50 animate-in slide-in-from-bottom-5">
+            <button onClick={handleDismissPrompt} className="absolute top-3 right-3 text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white">
                <X className="w-5 h-5" />
             </button>
             <div className="flex items-start gap-4">
@@ -120,10 +120,10 @@ export default function App() {
                </div>
                <div>
                   <h4 className="font-bold mb-1 font-sans">Enable football match notifications?</h4>
-                  <p className="text-xs text-zinc-400 mb-3">Get live goal alerts and kickoff reminders for your followed teams.</p>
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-3">Get live goal alerts and kickoff reminders for your followed teams.</p>
                   <div className="flex items-center gap-2">
                      <button onClick={handleAllowNotifications} className="px-4 py-1.5 bg-accent-blue text-black font-bold text-xs rounded-full hover:shadow-[0_0_15px_rgba(0,209,255,0.4)] transition-all">Allow</button>
-                     <button onClick={handleDismissPrompt} className="px-4 py-1.5 bg-white/5 text-white font-medium text-xs rounded-full hover:bg-white/10 transition-colors">Not now</button>
+                     <button onClick={handleDismissPrompt} className="px-4 py-1.5 bg-black/5 dark:bg-white/5 text-zinc-900 dark:text-white font-medium text-xs rounded-full hover:bg-white/10 transition-colors">Not now</button>
                   </div>
                </div>
             </div>

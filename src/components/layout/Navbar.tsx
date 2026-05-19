@@ -41,8 +41,8 @@ export default function Navbar() {
           </button>
           
           {showCountries && (
-             <div className="absolute top-12 right-12 w-48 bg-primary-dark/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl p-2 z-50">
-                <div className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2 px-2 pt-2">Select Region</div>
+             <div className="absolute top-12 right-12 w-48 bg-white/95 dark:bg-primary-dark/95 backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-xl shadow-2xl p-2 z-50">
+                <div className="text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-2 px-2 pt-2">Select Region</div>
                 <div className="flex flex-col gap-1 max-h-64 overflow-y-auto hide-scrollbar">
                    <button onClick={() => setShowCountries(false)} className="text-left px-3 py-2 rounded hover:bg-white/10 transition-colors flex gap-2 items-center text-sm"><span className="text-lg">🇧🇩</span> Bangladesh</button>
                    <button onClick={() => setShowCountries(false)} className="text-left px-3 py-2 rounded hover:bg-white/10 transition-colors flex gap-2 items-center text-sm"><span className="text-lg">🇬🇧</span> UK</button>
