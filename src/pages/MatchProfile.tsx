@@ -390,41 +390,50 @@ export default function MatchProfile() {
                                const awayPct = total > 0 ? (parsedAway / total) * 100 : 50;
                                
                                return (
-                                  <div key={idx} className="flex flex-col gap-1.5">
-                                     <div className="flex justify-between text-xs font-mono">
+                                  <div key={idx} className="flex flex-col gap-2">
+                                     <div className="flex justify-between items-center text-xs font-mono px-1">
                                         <motion.span 
                                            key={`home-${homeVal}`}
                                            initial={{ scale: 1.2, color: '#00ff87' }}
-                                           animate={{ scale: 1, color: '#ffffff' }}
+                                           animate={{ scale: 1, color: 'inherit' }}
                                            transition={{ duration: 0.5 }}
-                                           className="font-bold text-zinc-900 dark:text-white inline-block"
+                                           className="font-bold text-zinc-900 dark:text-white"
                                         >
                                            {homeVal}
                                         </motion.span>
-                                        <span className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">{st.type}</span>
+                                        <span className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px]">{st.type}</span>
                                         <motion.span 
                                            key={`away-${awayVal}`}
                                            initial={{ scale: 1.2, color: '#00ff87' }}
-                                           animate={{ scale: 1, color: '#ffffff' }}
+                                           animate={{ scale: 1, color: 'inherit' }}
                                            transition={{ duration: 0.5 }}
-                                           className="font-bold text-zinc-900 dark:text-white inline-block"
+                                           className="font-bold text-zinc-900 dark:text-white"
                                         >
                                            {awayVal}
                                         </motion.span>
                                      </div>
-                                     <div className="h-1.5 w-full bg-black/5 dark:bg-white/5 rounded-full flex overflow-hidden">
-                                        <motion.div 
-                                          initial={{ width: `${homePct}%` }} 
-                                          animate={{ width: `${homePct}%` }} 
-                                          transition={{ type: "spring", bounce: 0, duration: 0.8 }} 
-                                          className="h-full bg-black/70 dark:bg-white/70">
-                                        </motion.div>
-                                        <motion.div 
-                                          initial={{ width: `${awayPct}%` }} 
-                                          animate={{ width: `${awayPct}%` }}
-                                          transition={{ type: "spring", bounce: 0, duration: 0.8 }} 
-                                          className="h-full bg-accent-green/70">
-                                        </motion.div>
+                                     <div className="flex items-center w-full justify-center">
+                                       <div className="flex-1 flex justify-end">
+                                          <div className="h-1.5 w-full bg-black/5 dark:bg-white/5 rounded-l-full overflow-hidden flex justify-end">
+                                             <motion.div 
+                                                initial={{ width: 0 }} 
+                                                animate={{ width: `${homePct}%` }} 
+                                                transition={{ type: "spring", bounce: 0, duration: 0.8 }} 
+                                                className="h-full bg-zinc-900 dark:bg-white rounded-l-full">
+                                             </motion.div>
+                                          </div>
+                                       </div>
+                                       <div className="w-[1px] h-3 bg-black/10 dark:bg-white/10 mx-1 rounded-full" />
+                                       <div className="flex-1 flex justify-start">
+                                          <div className="h-1.5 w-full bg-black/5 dark:bg-white/5 rounded-r-full overflow-hidden flex justify-start">
+                                             <motion.div 
+                                                initial={{ width: 0 }} 
+                                                animate={{ width: `${awayPct}%` }}
+                                                transition={{ type: "spring", bounce: 0, duration: 0.8 }} 
+                                                className="h-full bg-accent-green rounded-r-full">
+                                             </motion.div>
+                                          </div>
+                                       </div>
                                      </div>
                                   </div>
                                )

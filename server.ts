@@ -164,7 +164,7 @@ const fetchFromAPI = async (url: string, retries = 2): Promise<any> => {
       }
       lastRequestTime = Date.now();
 
-      const response = await axios.get(url, getApiHeaders());
+      const response = await axios.get(url, { ...getApiHeaders(), timeout: 8000 });
       
       const hasErrors = response.data && response.data.errors && 
         (Array.isArray(response.data.errors) 
@@ -245,7 +245,7 @@ const tryFallbackApi = async (url: string, originalErrorData: any) => {
         // Map today's events if date matches
         const dateMatch = url.match(/date=([^&]+)/);
         const date = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
-        const res = await axios.get(`${tsdbBase}/eventsday.php?d=${date}&s=Soccer`);
+        const res = await axios.get(`${tsdbBase}/eventsday.php?d=${date}&s=Soccer`, { timeout: 5000 });
         const events = res.data?.events || [];
         
         const mapped = events.map((e: any) => ({

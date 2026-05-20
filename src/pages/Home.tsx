@@ -12,6 +12,7 @@ export default function Home() {
   const [news, setNews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [newsTab, setNewsTab] = useState<'GLOBAL' | 'LIVE' | 'PROFILE'>('GLOBAL');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -47,15 +48,19 @@ export default function Home() {
     const init = async () => {
       try {
         const [live, up, n] = await Promise.all([
-          getLiveFixtures(),
-          getUpcomingFixtures(),
-          getNews()
+          getLiveFixtures().catch(() => null),
+          getUpcomingFixtures().catch(() => null),
+          getNews().catch(() => null)
         ]);
-        if (live?.errors && Object.keys(live.errors).length > 0) {
-          setApiError(Object.values(live.errors).join(', '));
-        } else if (live?.response) {
-          setLiveFixtures(live.response);
+
+        if (live) {
+          if (live.errors && Object.keys(live.errors).length > 0) {
+            setApiError(Object.values(live.errors).join(', '));
+          } else if (live.response) {
+            setLiveFixtures(live.response);
+          }
         }
+
         if (up?.response) setUpcoming(up.response);
         if (n?.articles) setNews(n.articles);
       } catch (err) {
@@ -77,10 +82,11 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6 space-y-6 lg:flex lg:gap-6 lg:space-y-0">
-      
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+    <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <div className="space-y-6 lg:flex lg:gap-6 lg:space-y-0">
+        
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col gap-6 overflow-hidden">
         
         {/* Trending Live */}
         <section className="glass-panel p-6 rounded-2xl relative overflow-hidden">
@@ -151,32 +157,6 @@ export default function Home() {
 
       {/* Sidebar Area */}
       <aside className="w-full lg:w-80 flex flex-col gap-6">
-        {/* Live News */}
-        <section className="glass-panel p-5 rounded-2xl flex-1 max-h-[600px] overflow-y-auto hide-scrollbar">
-          <h2 className="text-sm font-bold uppercase tracking-widest text-black/40 dark:text-white/40 mb-5">Global News Feed</h2>
-          <div className="space-y-5">
-            {news.map((article, i) => (
-              <motion.a 
-                href={article.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                key={i} 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="flex flex-col gap-1 group block"
-              >
-                <span className="text-[9px] text-accent-blue font-bold tracking-widest uppercase">{article.source}</span>
-                <h4 className="text-xs font-bold leading-relaxed mb-1 group-hover:text-accent-blue transition-colors line-clamp-2">{article.headline}</h4>
-                <span className="text-[10px] opacity-40">{format(new Date(article.publishedAt), 'MMM dd, HH:mm')}</span>
-              </motion.a>
-            ))}
-            
-            {!loading && news.length === 0 && (
-               <p className="text-zinc-500 dark:text-zinc-400 text-xs">News feed unavailable.</p>
-            )}
-          </div>
-        </section>
         
         {/* Quick Links & Competitions */}
         <section className="glass-panel p-5 rounded-2xl space-y-6">
@@ -212,7 +192,73 @@ export default function Home() {
            </div>
         </section>
       </aside>
+      </div>
 
+      {/* News Sector */}
+      <section className="glass-panel p-6 rounded-2xl">
+        <h2 className="text-xl font-bold font-sans tracking-tight mb-6">News Hub</h2>
+        
+        <div className="flex items-center gap-6 border-b border-black/10 dark:border-white/10 mb-6">
+           <button 
+             onClick={() => setNewsTab('GLOBAL')}
+             className={`pb-3 text-sm font-bold uppercase tracking-widest border-b-2 transition-colors ${newsTab === 'GLOBAL' ? 'border-accent-blue text-accent-blue' : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+           >
+             Global
+           </button>
+           <button 
+             onClick={() => setNewsTab('LIVE')}
+             className={`pb-3 text-sm font-bold uppercase tracking-widest border-b-2 transition-colors flex items-center gap-1.5 ${newsTab === 'LIVE' ? 'border-accent-green text-accent-green' : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+           >
+             <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-green opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-green"></span>
+             </span>
+             Live
+           </button>
+           <button 
+             onClick={() => setNewsTab('PROFILE')}
+             className={`pb-3 text-sm font-bold uppercase tracking-widest border-b-2 transition-colors ${newsTab === 'PROFILE' ? 'border-accent-blue text-accent-blue' : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+           >
+             Profile
+           </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+           {newsTab === 'GLOBAL' && (
+             news.length > 0 ? news.map((article, i) => (
+                <motion.a 
+                  href={article.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  key={i} 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="flex flex-col gap-2 group p-4 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors border border-transparent hover:border-black/5 dark:hover:border-white/5"
+                >
+                  {article.imageUrl && <img src={article.imageUrl} alt="" className="w-full h-40 object-cover rounded-lg mb-2" />}
+                  <span className="text-[10px] text-accent-blue font-bold tracking-widest uppercase">{article.source}</span>
+                  <h4 className="text-sm font-bold leading-snug group-hover:text-accent-blue transition-colors line-clamp-2">{article.headline}</h4>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 mt-auto pt-2">{format(new Date(article.publishedAt), 'MMM dd, yyyy HH:mm')}</span>
+                </motion.a>
+              )) : (
+                <p className="text-zinc-500 dark:text-zinc-400 text-sm col-span-full py-10 text-center">News feed unavailable.</p>
+              )
+           )}
+
+           {newsTab === 'LIVE' && (
+              <div className="col-span-full py-10 text-center text-zinc-500 dark:text-zinc-400 text-sm">
+                 Live match editorial coverage and minute-by-minute updates will appear here.
+              </div>
+           )}
+
+           {newsTab === 'PROFILE' && (
+              <div className="col-span-full py-10 text-center text-zinc-500 dark:text-zinc-400 text-sm">
+                 News dedicated to the teams and leagues you follow will be curated here.
+              </div>
+           )}
+        </div>
+      </section>
     </div>
   )
 }

@@ -1,23 +1,28 @@
+import React, { useEffect, useState, Suspense } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
-import Navbar from './components/layout/Navbar';
-import BottomNav from './components/layout/BottomNav';
-import Home from './pages/Home';
-import Live from './pages/Live';
-import Search from './pages/Search';
-import Fixtures from './pages/Fixtures';
-import Profile from './pages/Profile';
-import Leagues from './pages/Leagues';
-import TeamProfile from './pages/TeamProfile';
-import LeagueProfile from './pages/LeagueProfile';
-import International from './pages/International';
-import MatchProfile from './pages/MatchProfile';
-import { useEffect, useState } from 'react';
 import { Bell, X } from 'lucide-react';
 
-
+import Navbar from './components/layout/Navbar';
+import BottomNav from './components/layout/BottomNav';
 import { getStatus } from './lib/api';
 
-import InternationalProfile from './pages/InternationalProfile';
+const Home = React.lazy(() => import('./pages/Home'));
+const Live = React.lazy(() => import('./pages/Live'));
+const Search = React.lazy(() => import('./pages/Search'));
+const Fixtures = React.lazy(() => import('./pages/Fixtures'));
+const Profile = React.lazy(() => import('./pages/Profile'));
+const Leagues = React.lazy(() => import('./pages/Leagues'));
+const TeamProfile = React.lazy(() => import('./pages/TeamProfile'));
+const LeagueProfile = React.lazy(() => import('./pages/LeagueProfile'));
+const International = React.lazy(() => import('./pages/International'));
+const InternationalProfile = React.lazy(() => import('./pages/InternationalProfile'));
+const MatchProfile = React.lazy(() => import('./pages/MatchProfile'));
+
+const PageLoader = () => (
+  <div className="flex-1 flex items-center justify-center min-h-[50vh]">
+    <div className="w-8 h-8 border-4 border-accent-blue border-t-transparent rounded-full animate-spin"></div>
+  </div>
+);
 
 export default function App() {
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
@@ -28,9 +33,9 @@ export default function App() {
     // Check API status
     const checkApiStatus = async () => {
       try {
-        const res = await getStatus();
-        const hasErrors = res.errors && (Array.isArray(res.errors) ? res.errors.length > 0 : Object.keys(res.errors).length > 0);
-        const isActive = res.response?.subscription?.active !== false;
+        const res = await getStatus().catch(() => ({ errors: { network: true } }));
+        const hasErrors = res?.errors && (Array.isArray(res.errors) ? res.errors.length > 0 : Object.keys(res.errors).length > 0);
+        const isActive = res?.response?.subscription?.active !== false;
 
         if (hasErrors || !isActive) {
            setApiUnavailable(true);
@@ -69,20 +74,14 @@ export default function App() {
     setShowNotifPrompt(false);
   }
 
-  if (isCheckingApi) {
-    return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-[#07090D] flex items-center justify-center">
-         <div className="flex flex-col items-center">
-            <div className="w-12 h-12 border-4 border-[#00D1FF] border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p className="text-zinc-600 dark:text-zinc-400 font-mono text-sm animate-pulse">Initializing Football.World...</p>
-         </div>
-      </div>
-    );
-  }
+  // Do not block rendering, let the UI shell load instantly
+  // we will just not show the layout until ready, but wait, the instructions say 
+  // "open instantly", "never stay stuck loading". 
 
   return (
     <div className="min-h-screen transition-colors relative">
       {apiUnavailable && (
+
         <div className="bg-red-500/10 text-red-500 text-center py-2 text-xs font-bold font-mono z-50 relative border-b border-red-500/20">
            Football API connection unavailable. Using fallback data providers.
         </div>
@@ -90,21 +89,23 @@ export default function App() {
       <Navbar />
       
       <main className="pt-[116px] md:pt-16 pb-20 md:pb-0 min-h-screen">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/live" element={<Live />} />
-          <Route path="/live-football-score" element={<Live />} />
-          <Route path="/search" element={<Search />} />
-          <Route path="/fixtures" element={<Fixtures />} />
-          <Route path="/today-football-match" element={<Fixtures />} />
-          <Route path="/leagues" element={<Leagues />} />
-          <Route path="/international" element={<International />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/team/:id" element={<TeamProfile />} />
-          <Route path="/league/:id" element={<LeagueProfile />} />
-          <Route path="/international/:id" element={<InternationalProfile />} />
-          <Route path="/match/:id" element={<MatchProfile />} />
-        </Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/live" element={<Live />} />
+            <Route path="/live-football-score" element={<Live />} />
+            <Route path="/search" element={<Search />} />
+            <Route path="/fixtures" element={<Fixtures />} />
+            <Route path="/today-football-match" element={<Fixtures />} />
+            <Route path="/leagues" element={<Leagues />} />
+            <Route path="/international" element={<International />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/team/:id" element={<TeamProfile />} />
+            <Route path="/league/:id" element={<LeagueProfile />} />
+            <Route path="/international/:id" element={<InternationalProfile />} />
+            <Route path="/match/:id" element={<MatchProfile />} />
+          </Routes>
+        </Suspense>
       </main>
 
       <BottomNav />

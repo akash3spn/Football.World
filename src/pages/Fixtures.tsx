@@ -19,6 +19,8 @@ export default function Fixtures() {
     getFixturesByDate(dateStr).then(res => {
       if (res?.response) setFixtures(res.response);
       else setFixtures([]);
+    }).catch(() => {
+      setFixtures([]);
     }).finally(() => setLoading(false));
   }, [selectedDate]);
 
