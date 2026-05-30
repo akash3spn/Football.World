@@ -78,52 +78,98 @@ export default function Fixtures() {
                  <p className="text-zinc-500 dark:text-zinc-400 text-sm">Official football information currently unavailable.</p>
              </div>
           ) : (
-             <div className="grid grid-cols-1 gap-3">
-                {fixtures.map((match, i) => {
-                  const dateObj = new Date(match.fixture.date);
-                  return (
-                    <div 
-                       key={i} 
-                       onClick={() => navigate(`/match/${match.fixture.id}`)}
-                       className="glass-panel p-4 flex flex-col md:flex-row md:items-center gap-4 group hover:bg-white/5 transition-colors border border-black/5 dark:border-white/5 cursor-pointer rounded-xl hover:border-accent-blue/50"
-                    >
-                      <div className="flex items-center justify-between md:justify-start gap-4 md:w-1/4 pb-3 md:pb-0 border-b border-black/5 dark:border-white/5 md:border-b-0">
-                        <div className="flex flex-col text-left">
-                           <span className="text-xl font-bold font-mono text-zinc-900 dark:text-white">{format(dateObj, 'HH:mm')}</span>
-                           <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-widest">{format(dateObj, 'MMM dd')} - {match.fixture.status.short}</span>
-                        </div>
-                        <div className="md:hidden flex items-center gap-2">
-                           <img src={match.league.logo} className="w-4 h-4 object-contain opacity-50 grayscale" />
-                           <span className="text-[10px] text-accent-blue tracking-wider uppercase">{match.league.name}</span>
-                        </div>
-                      </div>
+             <div className="flex flex-col gap-8">
+                {(() => {
+                   const classify = (fixture: any) => {
+                      const name = (fixture.league?.name || '').toLowerCase();
+                      const country = (fixture.league?.country || '').toLowerCase();
                       
-                      <div className="flex-1 w-full flex items-center justify-between px-2">
-                         <div className="flex items-center gap-3 justify-end flex-1">
-                           <span className="font-semibold text-sm sm:text-base md:text-lg truncate max-w-[100px] sm:max-w-[150px]">{match.teams.home.name}</span>
-                           <img src={match.teams.home.logo} className="w-8 h-8 object-contain drop-shadow-lg" />
+                      const isInternationalMatch = country === 'world' || name.includes('world cup') || name.includes('euro') || name.includes('copa america') || name.includes('friendlies') || name.includes('nations league') || name.includes('qualifying');
+                      const isContinentalClub = name.includes('champions league') || name.includes('europa') || name.includes('conference') || name.includes('libertadores') || name.includes('sudamericana');
+                      
+                      if (isInternationalMatch && !isContinentalClub) return 'international';
+                      if (isContinentalClub) return 'club_continental';
+                      return 'national_domestic';
+                   };
+                   
+                   const grouped = {
+                      international: [] as any[],
+                      club_continental: [] as any[],
+                      national_domestic: [] as any[]
+                   };
+                   
+                   fixtures.forEach(f => {
+                      grouped[classify(f)].push(f);
+                   });
+                   
+                   const GroupSection = ({ title, items, colorClass }: { title: string, items: any[], colorClass: string }) => {
+                      if (items.length === 0) return null;
+                      return (
+                         <div className="space-y-3">
+                            <div className="flex items-center gap-2 mb-4 mt-2">
+                               <div className={`w-1.5 h-4 rounded-full bg-${colorClass}`}></div>
+                               <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-800 dark:text-zinc-200">{title}</h2>
+                               <div className="flex-1 h-px bg-black/5 dark:bg-white/5 ml-2"></div>
+                            </div>
+                            <div className="grid grid-cols-1 gap-3">
+                              {items.map((match, i) => {
+                                const dateObj = new Date(match.fixture.date);
+                                return (
+                                  <div 
+                                     key={match.fixture.id || i} 
+                                     onClick={() => navigate(`/match/${match.fixture.id}`)}
+                                     className="glass-panel p-4 flex flex-col md:flex-row md:items-center gap-4 group hover:bg-white/5 transition-colors border border-black/5 dark:border-white/5 cursor-pointer rounded-xl hover:border-accent-blue/50"
+                                  >
+                                    <div className="flex items-center justify-between md:justify-start gap-4 md:w-1/4 pb-3 md:pb-0 border-b border-black/5 dark:border-white/5 md:border-b-0">
+                                      <div className="flex flex-col text-left">
+                                         <span className="text-xl font-bold font-mono text-zinc-900 dark:text-white">{format(dateObj, 'HH:mm')}</span>
+                                         <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-widest">{format(dateObj, 'MMM dd')} - {match.fixture.status.short}</span>
+                                      </div>
+                                      <div className="md:hidden flex items-center gap-2">
+                                         <img src={match.league.logo} className="w-4 h-4 object-contain opacity-50 grayscale" />
+                                         <span className="text-[10px] text-accent-blue tracking-wider uppercase">{match.league.name}</span>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="flex-1 w-full flex items-center justify-between px-2">
+                                       <div className="flex items-center gap-3 justify-end flex-1">
+                                         <span className="font-semibold text-sm sm:text-base md:text-lg truncate max-w-[100px] sm:max-w-[150px]">{match.teams.home.name}</span>
+                                         <img src={match.teams.home.logo} className="w-8 h-8 object-contain drop-shadow-lg" />
+                                       </div>
+                                       <div className="px-4 py-1.5 mx-4 rounded-lg bg-black/5 dark:bg-primary-dark/50 border border-black/10 dark:border-white/10 text-xs font-mono uppercase tracking-widest text-zinc-500 dark:text-zinc-400 min-w-[50px] text-center">
+                                          {match.fixture.status.short === 'FT' || match.fixture.status.short === 'HT' ? (
+                                             <span className="font-bold text-zinc-900 dark:text-white">{match.goals.home} - {match.goals.away}</span>
+                                          ) : 'VS'}
+                                       </div>
+                                       <div className="flex items-center gap-3 justify-start flex-1">
+                                         <img src={match.teams.away.logo} className="w-8 h-8 object-contain drop-shadow-lg" />
+                                         <span className="font-semibold text-sm sm:text-base md:text-lg truncate max-w-[100px] sm:max-w-[150px]">{match.teams.away.name}</span>
+                                       </div>
+                                    </div>
+              
+                                    <div className="hidden md:flex md:w-1/4 flex-col items-end justify-center">
+                                       <div className="flex items-center gap-2 mb-1">
+                                          <span className="text-[10px] text-accent-blue font-bold uppercase tracking-wider text-right">{match.league.name}</span>
+                                          <img src={match.league.logo} className="w-5 h-5 object-contain opacity-50 grayscale group-hover:opacity-100 group-hover:grayscale-0 transition-all bg-black/10 dark:bg-white/10 p-0.5 rounded-sm" />
+                                       </div>
+                                       <span className="text-[9px] text-zinc-500 dark:text-zinc-400 font-mono tracking-widest uppercase">{match.league.country}</span>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
                          </div>
-                         <div className="px-4 py-1.5 mx-4 rounded-lg bg-black/5 dark:bg-primary-dark/50 border border-black/10 dark:border-white/10 text-xs font-mono uppercase tracking-widest text-zinc-500 dark:text-zinc-400 min-w-[50px] text-center">
-                            {match.fixture.status.short === 'FT' || match.fixture.status.short === 'HT' ? (
-                               <span className="font-bold text-zinc-900 dark:text-white">{match.goals.home} - {match.goals.away}</span>
-                            ) : 'VS'}
-                         </div>
-                         <div className="flex items-center gap-3 justify-start flex-1">
-                           <img src={match.teams.away.logo} className="w-8 h-8 object-contain drop-shadow-lg" />
-                           <span className="font-semibold text-sm sm:text-base md:text-lg truncate max-w-[100px] sm:max-w-[150px]">{match.teams.away.name}</span>
-                         </div>
-                      </div>
+                      );
+                   };
 
-                      <div className="hidden md:flex md:w-1/4 flex-col items-end justify-center">
-                         <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] text-accent-blue font-bold uppercase tracking-wider text-right">{match.league.name}</span>
-                            <img src={match.league.logo} className="w-5 h-5 object-contain opacity-50 grayscale group-hover:opacity-100 group-hover:grayscale-0 transition-all bg-black/10 dark:bg-white/10 p-0.5 rounded-sm" />
-                         </div>
-                         <span className="text-[9px] text-zinc-500 dark:text-zinc-400 font-mono tracking-widest uppercase">{match.league.country}</span>
-                      </div>
-                    </div>
-                  )
-                })}
+                   return (
+                      <>
+                         <GroupSection title="International Matches" items={grouped.international} colorClass="accent-blue" />
+                         <GroupSection title="Continental Club Matches" items={grouped.club_continental} colorClass="accent-green" />
+                         <GroupSection title="National / Domestic Matches" items={grouped.national_domestic} colorClass="zinc-400" />
+                      </>
+                   );
+                })()}
              </div>
           )}
        </div>

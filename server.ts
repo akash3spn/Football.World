@@ -239,7 +239,7 @@ const tryFallbackApi = async (url: string, originalErrorData: any) => {
    const tsdbBase = 'https://www.thesportsdb.com/api/v1/json/3';
    try {
      if (url.includes('live=all')) {
-        // Just return empty array for live on fallback
+        // Just return empty array for live on fallback, no mock data
         return { response: [], fallback: true };
      } else if (url.includes('fixtures?date=') || url.includes('next=')) {
         // Map today's events if date matches
@@ -252,9 +252,9 @@ const tryFallbackApi = async (url: string, originalErrorData: any) => {
            fixture: {
              id: e.idEvent,
              date: e.strTimestamp || e.dateEvent,
-             status: { elapsed: null, short: 'NS' }
+             status: { elapsed: null, short: e.strStatus === 'Match Finished' ? 'FT' : (e.strStatus || (e.intHomeScore !== null ? 'FT' : 'NS')) }
            },
-           league: { name: e.strLeague, logo: e.strLeagueBadge },
+           league: { name: e.strLeague, logo: e.strLeagueBadge, country: e.strCountry || 'Unknown' },
            teams: {
               home: { name: e.strHomeTeam, logo: e.strHomeTeamBadge || 'https://media.api-sports.io/football/teams/1.png' },
               away: { name: e.strAwayTeam, logo: e.strAwayTeamBadge || 'https://media.api-sports.io/football/teams/2.png' }

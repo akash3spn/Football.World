@@ -94,69 +94,115 @@ export default function Live() {
             </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {liveFixtures.map((match, i) => (
-             <motion.div
-               key={i}
-               initial={{ opacity: 0, scale: 0.95 }}
-               animate={{ opacity: 1, scale: 1 }}
-               transition={{ delay: i * 0.05 }}
-               className="glass-panel p-5 rounded-xl group hover:border-[#00D1FF]/50 hover:bg-[#00D1FF]/5 transition-all border border-black/5 dark:border-white/5 relative"
-             >
-                <div className="absolute top-4 right-4 z-10">
-                   <button 
-                      onClick={async (e) => {
-                         e.stopPropagation();
-                         const isFollowed = followedMatches.has(String(match.fixture.id));
-                         if (isFollowed) {
-                            await unfollowMatch(String(match.fixture.id));
-                            setFollowedMatches(prev => {
-                               const next = new Set(prev);
-                               next.delete(String(match.fixture.id));
-                               return next;
-                            });
-                         } else {
-                            const success = await followMatch(String(match.fixture.id));
-                            if (success) {
-                               setFollowedMatches(prev => new Set(prev).add(String(match.fixture.id)));
-                            } else {
-                               alert('Could not enable notifications.');
-                            }
-                         }
-                      }}
-                      className={`p-2 rounded-full backdrop-blur-md border ${followedMatches.has(String(match.fixture.id)) ? 'bg-[#00FF87]/20 border-[#00FF87]/50 text-[#00FF87]' : 'bg-black/40 border-black/10 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white hover:bg-white/10'} transition-all`}
-                    >
-                      {followedMatches.has(String(match.fixture.id)) ? <Bell className="w-4 h-4 fill-current animate-pulse" /> : <BellOff className="w-4 h-4" />}
-                   </button>
-                </div>
-                <div className="flex justify-between items-center mb-6 cursor-pointer" onClick={() => navigate(`/match/${match.fixture.id}`)}>
-                  <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-widest truncate max-w-[80%] pr-10">{match.league.name}</span>
-                  <span className="text-[#00FF87] text-xs font-mono font-bold live-pulse">{match.fixture.status.elapsed}'</span>
-                </div>
+        <div className="flex flex-col gap-8">
+          {(() => {
+             const classify = (fixture: any) => {
+                const name = (fixture.league?.name || '').toLowerCase();
+                const country = (fixture.league?.country || '').toLowerCase();
                 
-                <div className="flex items-center justify-between cursor-pointer" onClick={() => navigate(`/match/${match.fixture.id}`)}>
-                   <div className="flex flex-col items-center w-1/3 gap-3">
-                     <img src={match.teams.home.logo} className="w-16 h-16 object-contain drop-shadow-lg" />
-                     <span className="text-sm font-semibold truncate w-full text-center">{match.teams.home.name}</span>
+                const isInternationalMatch = country === 'world' || name.includes('world cup') || name.includes('euro') || name.includes('copa america') || name.includes('friendlies') || name.includes('nations league') || name.includes('qualifying');
+                const isContinentalClub = name.includes('champions league') || name.includes('europa') || name.includes('conference') || name.includes('libertadores') || name.includes('sudamericana');
+                
+                if (isInternationalMatch && !isContinentalClub) return 'international';
+                if (isContinentalClub) return 'club_continental';
+                return 'national_domestic';
+             };
+             
+             const grouped = {
+                international: [] as any[],
+                club_continental: [] as any[],
+                national_domestic: [] as any[]
+             };
+             
+             liveFixtures.forEach(f => {
+                grouped[classify(f)].push(f);
+             });
+             
+             const GroupSection = ({ title, items, colorClass }: { title: string, items: any[], colorClass: string }) => {
+                if (items.length === 0) return null;
+                return (
+                   <div className="space-y-4">
+                      <div className="flex items-center gap-2 mb-4 mt-2">
+                         <div className={`w-1.5 h-4 rounded-full bg-${colorClass}`}></div>
+                         <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-800 dark:text-zinc-200">{title}</h2>
+                         <div className="flex-1 h-px bg-black/5 dark:bg-white/5 ml-2"></div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {items.map((match, i) => (
+                           <motion.div
+                             key={match.fixture.id || i}
+                             initial={{ opacity: 0, scale: 0.95 }}
+                             animate={{ opacity: 1, scale: 1 }}
+                             transition={{ delay: i * 0.05 }}
+                             className="glass-panel p-5 rounded-xl group hover:border-[#00D1FF]/50 hover:bg-[#00D1FF]/5 transition-all border border-black/5 dark:border-white/5 relative"
+                           >
+                              <div className="absolute top-4 right-4 z-10">
+                                 <button 
+                                    onClick={async (e) => {
+                                       e.stopPropagation();
+                                       const isFollowed = followedMatches.has(String(match.fixture.id));
+                                       if (isFollowed) {
+                                          await unfollowMatch(String(match.fixture.id));
+                                          setFollowedMatches(prev => {
+                                             const next = new Set(prev);
+                                             next.delete(String(match.fixture.id));
+                                             return next;
+                                          });
+                                       } else {
+                                          const success = await followMatch(String(match.fixture.id));
+                                          if (success) {
+                                             setFollowedMatches(prev => new Set(prev).add(String(match.fixture.id)));
+                                          } else {
+                                             alert('Could not enable notifications.');
+                                          }
+                                       }
+                                    }}
+                                    className={`p-2 rounded-full backdrop-blur-md border ${followedMatches.has(String(match.fixture.id)) ? 'bg-[#00FF87]/20 border-[#00FF87]/50 text-[#00FF87]' : 'bg-black/40 border-black/10 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white hover:bg-white/10'} transition-all`}
+                                  >
+                                    {followedMatches.has(String(match.fixture.id)) ? <Bell className="w-4 h-4 fill-current animate-pulse" /> : <BellOff className="w-4 h-4" />}
+                                 </button>
+                              </div>
+                              <div className="flex justify-between items-center mb-6 cursor-pointer" onClick={() => navigate(`/match/${match.fixture.id}`)}>
+                                <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-widest truncate max-w-[80%] pr-10">{match.league.name}</span>
+                                <span className="text-[#00FF87] text-xs font-mono font-bold live-pulse">{match.fixture.status.elapsed}'</span>
+                              </div>
+                              
+                              <div className="flex items-center justify-between cursor-pointer" onClick={() => navigate(`/match/${match.fixture.id}`)}>
+                                 <div className="flex flex-col items-center w-1/3 gap-3">
+                                   <img src={match.teams.home.logo} className="w-16 h-16 object-contain drop-shadow-lg" />
+                                   <span className="text-sm font-semibold truncate w-full text-center">{match.teams.home.name}</span>
+                                 </div>
+                                 
+                                 <div className="w-1/3 flex flex-col items-center">
+                                   <span className="text-4xl font-black italic tracking-tighter shadow-black drop-shadow-xl">{match.goals.home} <span className="opacity-50 text-zinc-500 dark:text-zinc-400 text-3xl font-sans font-light mx-1">-</span> {match.goals.away}</span>
+                                   <div className="mt-4 flex items-center gap-1.5 bg-black/40 px-3 py-1 rounded border border-black/10 dark:border-white/10">
+                                      <span className="text-[10px] font-mono text-zinc-600 dark:text-zinc-400">Possession: </span>
+                                      <span className="text-[10px] font-bold text-zinc-900 dark:text-white">{match.statistics?.[0]?.statistics?.find((s:any) => s.type === 'Ball Possession')?.value || '50%'}</span>
+                                      <span className="text-[10px] text-zinc-600">-</span>
+                                      <span className="text-[10px] font-bold text-zinc-900 dark:text-white">{match.statistics?.[1]?.statistics?.find((s:any) => s.type === 'Ball Possession')?.value || '50%'}</span>
+                                   </div>
+                                 </div>
+              
+                                 <div className="flex flex-col items-center w-1/3 gap-3">
+                                   <img src={match.teams.away.logo} className="w-16 h-16 object-contain drop-shadow-lg" />
+                                   <span className="text-sm font-semibold truncate w-full text-center">{match.teams.away.name}</span>
+                                 </div>
+                              </div>
+                           </motion.div>
+                        ))}
+                      </div>
                    </div>
-                   
-                   <div className="w-1/3 flex flex-col items-center">
-                     <span className="text-4xl font-black italic tracking-tighter shadow-black drop-shadow-xl">{match.goals.home} <span className="opacity-50 text-zinc-500 dark:text-zinc-400 text-3xl font-sans font-light mx-1">-</span> {match.goals.away}</span>
-                     <div className="mt-4 flex items-center gap-1.5 bg-black/40 px-3 py-1 rounded border border-black/10 dark:border-white/10">
-                        <span className="text-[10px] font-mono text-zinc-600 dark:text-zinc-400">Possession: </span>
-                        <span className="text-[10px] font-bold text-zinc-900 dark:text-white">{match.statistics?.[0]?.statistics?.find((s:any) => s.type === 'Ball Possession')?.value || '50%'}</span>
-                        <span className="text-[10px] text-zinc-600">-</span>
-                        <span className="text-[10px] font-bold text-zinc-900 dark:text-white">{match.statistics?.[1]?.statistics?.find((s:any) => s.type === 'Ball Possession')?.value || '50%'}</span>
-                     </div>
-                   </div>
+                );
+             };
 
-                   <div className="flex flex-col items-center w-1/3 gap-3">
-                     <img src={match.teams.away.logo} className="w-16 h-16 object-contain drop-shadow-lg" />
-                     <span className="text-sm font-semibold truncate w-full text-center">{match.teams.away.name}</span>
-                   </div>
-                </div>
-             </motion.div>
-          ))}
+             return (
+                <>
+                   <GroupSection title="International Matches" items={grouped.international} colorClass="accent-blue" />
+                   <GroupSection title="Continental Club Matches" items={grouped.club_continental} colorClass="accent-green" />
+                   <GroupSection title="National / Domestic Matches" items={grouped.national_domestic} colorClass="zinc-400" />
+                </>
+             );
+          })()}
         </div>
       )}
     </div>
